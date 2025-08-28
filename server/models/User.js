@@ -1,0 +1,122 @@
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+const bcrypt = require('bcryptjs');
+
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  nom: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+      len: [2, 100]
+    }
+  },
+  prenom: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+      len: [2, 100]
+    }
+  },
+  email: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    unique: true,
+    validate: {
+      isEmail: true
+    }
+  },
+  mot_de_passe: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      len: {
+        args: [6, 255],
+        msg: 'Le mot de passe doit contenir entre 6 et 255 caractères'
+      }
+    }
+  },
+  role: {
+    type: DataTypes.ENUM('Agent', 'Superviseur', 'Administrateur', 'Patron'),
+    allowNull: false,
+    defaultValue: 'Agent'
+  },
+  telephone: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    validate: {
+      len: [0, 20]
+    }
+  },
+  departement_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'tbl_departements',
+      key: 'id'
+    }
+  },
+  sous_departement_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'tbl_sous_departements',
+      key: 'id'
+    }
+  },
+  actif: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  derniere_connexion: {
+    type: DataTypes.DATE,
+    allowNull: true
+  }
+}, {
+  tableName: 'tbl_utilisateurs',
+  hooks: {
+    beforeCreate: async (user) => {
+      if (user.mot_de_passe) {
+        user.mot_de_passe = await bcrypt.hash(user.mot_de_passe, 12);
+      }
+    },
+    beforeUpdate: async (user) => {
+      // Si le mot de passe est fourni et qu'il a changé, le hasher
+      if (user.changed('mot_de_passe') && user.mot_de_passe && user.mot_de_passe.length >= 6) {
+        user.mot_de_passe = await bcrypt.hash(user.mot_de_passe, 12);
+      }
+      // Si le mot de passe est vide ou trop court, ne pas le modifier
+      // Sequelize conservera l'ancienne valeur
+    }
+  }
+});
+
+// Instance method to check password
+User.prototype.checkPassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.mot_de_passe);
+};
+
+// Instance method to get full name
+User.prototype.getFullName = function() {
+  return `${this.prenom} ${this.nom}`;
+};
+
+// Instance method to check if user has permission
+User.prototype.hasPermission = function(requiredRole) {
+  const roleHierarchy = {
+    'Agent': 1,
+    'Superviseur': 2,
+    'Administrateur': 3,
+    'Patron': 4
+  };
+  
+  return roleHierarchy[this.role] >= roleHierarchy[requiredRole];
+};
+
+module.exports = User; 
