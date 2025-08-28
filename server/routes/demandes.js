@@ -9,23 +9,9 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Configuration multer pour upload de pièces justificatives
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads/demandes');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'piece-justificative-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Configuration multer pour upload de pièces justificatives - Cloudinary uniquement
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(), // Stockage en mémoire pour Cloudinary
   limits: {
     fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024 // 5MB
   },

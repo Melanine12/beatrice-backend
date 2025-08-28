@@ -11,23 +11,9 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads/depenses');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Configure multer for file uploads - Cloudinary uniquement
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(), // Stockage en mémoire pour Cloudinary
   limits: {
     fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024 // 5MB
   },
@@ -515,14 +501,10 @@ router.delete('/:id', [
       });
     }
 
-    // Delete associated files
+    // Delete associated files from Cloudinary (if they exist)
     if (depense.fichiers && depense.fichiers.length > 0) {
-      for (const file of depense.fichiers) {
-        const filePath = path.join(__dirname, '../../uploads/depenses', file.filename);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
+      console.log('🗑️ Suppression des fichiers associés depuis Cloudinary...');
+      // Note: Les fichiers sont maintenant sur Cloudinary, pas de suppression locale nécessaire
     }
 
     await depense.destroy();

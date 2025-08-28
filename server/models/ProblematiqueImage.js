@@ -72,6 +72,16 @@ const ProblematiqueImage = sequelize.define('ProblematiqueImage', {
     type: DataTypes.JSON,
     allowNull: true,
     comment: 'Métadonnées supplémentaires (EXIF, dimensions, etc.)'
+  },
+  public_id: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    comment: 'ID public Cloudinary de l\'image'
+  },
+  cloudinary_data: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    comment: 'Données Cloudinary (URLs, thumbnails, etc.)'
   }
 }, {
   tableName: 'tbl_problematiques_images',
@@ -128,11 +138,25 @@ ProblematiqueImage.prototype.isExisting = function() {
 
 // Instance method to get image URL for frontend
 ProblematiqueImage.prototype.getImageUrl = function() {
+  // Utiliser l'URL Cloudinary si disponible, sinon fallback sur le chemin local
+  if (this.cloudinary_data && this.cloudinary_data.secure_url) {
+    return this.cloudinary_data.secure_url;
+  }
   return `/uploads/problematiques/${this.nom_fichier}`;
 };
 
 // Instance method to get thumbnail URL
 ProblematiqueImage.prototype.getThumbnailUrl = function() {
+  // Utiliser les thumbnails Cloudinary si disponibles
+  if (this.cloudinary_data && this.cloudinary_data.thumbnails) {
+    // Retourner le thumbnail medium par défaut, sinon le premier disponible
+    return this.cloudinary_data.thumbnails.medium?.url || 
+           this.cloudinary_data.thumbnails.small?.url || 
+           this.cloudinary_data.thumbnails.large?.url ||
+           Object.values(this.cloudinary_data.thumbnails)[0]?.url;
+  }
+  
+  // Fallback sur le chemin local
   const nameWithoutExt = this.nom_fichier.replace(/\.[^/.]+$/, '');
   const extension = this.nom_fichier.split('.').pop();
   return `/uploads/problematiques/thumbnails/${nameWithoutExt}_thumb.${extension}`;

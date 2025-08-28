@@ -12,7 +12,8 @@ const Departement = require('../models/Departement');
 const SousDepartement = require('../models/SousDepartement');
 const Tache = require('../models/Tache');
 const { authenticateToken, requireRole } = require('../middleware/auth');
-const imageService = require('../services/imageService');
+const CloudinaryImageService = require('../services/cloudinaryImageService');
+const imageService = new CloudinaryImageService();
 
 const router = express.Router();
 
@@ -42,18 +43,13 @@ router.use(authenticateToken);
 // Test endpoint pour diagnostiquer le service d'images
 router.get('/test-images', async (req, res) => {
   try {
-    // Test du service d'images
-    await imageService.initializeDirectories();
-    
-    // Test du modèle ProblematiqueImage
-    console.log('🔍 Test du modèle ProblematiqueImage...');
+    // Test du service d'images Cloudinary
+    console.log('🔍 Test du service d\'images Cloudinary...');
     console.log('📋 Modèle importé:', typeof ProblematiqueImage);
     console.log('📋 Méthodes disponibles:', Object.getOwnPropertyNames(ProblematiqueImage));
     
     res.json({
-      message: 'Service d\'images fonctionnel',
-      uploadDir: imageService.uploadDir,
-      thumbnailsDir: imageService.thumbnailsDir,
+      message: 'Service d\'images Cloudinary fonctionnel',
       maxFileSize: imageService.maxFileSize,
       allowedMimeTypes: imageService.allowedMimeTypes,
       modelInfo: {
@@ -125,8 +121,7 @@ router.post('/test-upload', upload.array('fichiers', 5), async (req, res) => {
         buffer: f.buffer ? 'Présent' : 'Manquant'
       })));
       
-      // Test du service d'images
-      await imageService.initializeDirectories();
+      // Service Cloudinary ne nécessite pas d'initialisation de dossiers
       
       const uploadedImages = [];
       for (const file of req.files) {
@@ -550,8 +545,7 @@ router.post('/', [
     
     console.log('✅ Validation réussie');
 
-    // Initialiser les dossiers d'upload
-    await imageService.initializeDirectories();
+    // Service Cloudinary ne nécessite pas d'initialisation de dossiers
 
     // Créer la problématique d'abord
     const problematique = await Problematique.create(problematiqueData);
@@ -608,7 +602,7 @@ router.post('/', [
       // Mettre à jour le nombre d'images
       await problematique.update({
         nombre_images: uploadedImages.length,
-        image_principale: uploadedImages.length > 0 ? uploadedImages[0].chemin_fichier : null
+        image_principale: uploadedImages.length > 0 ? uploadedImages[0].chemin_fichier : null // URL Cloudinary directe
       });
 
       // Ajouter les images à la réponse
@@ -849,14 +843,10 @@ router.delete('/:id', [
       });
     }
 
-    // Delete associated files
+    // Delete associated files from Cloudinary (if they exist)
     if (problematique.fichiers && problematique.fichiers.length > 0) {
-      for (const file of problematique.fichiers) {
-        const filePath = path.join(__dirname, '../../uploads/problematiques', file.filename);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
+      console.log('🗑️ Suppression des fichiers associés depuis Cloudinary...');
+      // Note: Les fichiers sont maintenant sur Cloudinary, pas de suppression locale nécessaire
     }
 
     await problematique.destroy();

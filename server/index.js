@@ -34,6 +34,7 @@ const cycleVieArticlesRoutes = require('./routes/cycle-vie-articles');
 const buanderieRoutes = require('./routes/buanderie');
 const paiementsPartielsRoutes = require('./routes/paiements-partiels');
 const rappelsPaiementRoutes = require('./routes/rappels-paiement');
+const resetRoutes = require('./routes/reset');
 
 const app = express();
 // Socket.io for realtime notifications
@@ -138,6 +139,7 @@ app.use('/api/cycle-vie-articles', cycleVieArticlesRoutes);
 app.use('/api/buanderie', buanderieRoutes);
 app.use('/api/paiements-partiels', paiementsPartielsRoutes);
 app.use('/api/rappels-paiement', rappelsPaiementRoutes);
+app.use('/api/reset', resetRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
