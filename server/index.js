@@ -73,9 +73,20 @@ app.use('/api/', limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://hotelbeatricesys.com'] 
-    : ['http://localhost:3000', 'http://localhost:3001'],
+  origin: function (origin, callback) {
+    const allowedOrigins = process.env.NODE_ENV === 'production' 
+      ? ['https://hotelbeatricesys.com'] 
+      : ['http://localhost:3000', 'http://localhost:3001'];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control', 'X-File-Name'],
@@ -88,18 +99,21 @@ app.options('*', cors());
 
 // Add CORS headers to all responses
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.NODE_ENV === 'production' 
+  const allowedOrigin = process.env.NODE_ENV === 'production' 
     ? 'https://hotelbeatricesys.com' 
-    : 'http://localhost:3000');
+    : 'http://localhost:3000';
+    
+  res.header('Access-Control-Allow-Origin', allowedOrigin);
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-File-Name');
   res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
   
   if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
+    res.status(200).end();
+    return;
   }
+  next();
 });
 
 // Body parsing middleware with increased limits
@@ -174,7 +188,11 @@ app.get('/api/health', async (req, res) => {
       message: 'Hôtel Beatrice Management System is running',
       timestamp: new Date().toISOString(),
       database: 'Connected',
-      uptime: process.uptime()
+      uptime: process.uptime(),
+      cors: {
+        origin: process.env.NODE_ENV === 'production' ? 'https://hotelbeatricesys.com' : 'http://localhost:3000',
+        environment: process.env.NODE_ENV || 'development'
+      }
     });
   } catch (error) {
     res.status(503).json({ 
@@ -185,6 +203,19 @@ app.get('/api/health', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// CORS test endpoint
+app.get('/api/cors-test', (req, res) => {
+  res.json({
+    message: 'CORS test successful',
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString(),
+    cors: {
+      allowedOrigin: process.env.NODE_ENV === 'production' ? 'https://hotelbeatricesys.com' : 'http://localhost:3000',
+      environment: process.env.NODE_ENV || 'development'
+    }
+  });
 });
 
 // Enhanced error handling middleware
