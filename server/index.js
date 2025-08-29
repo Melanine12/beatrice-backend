@@ -71,22 +71,11 @@ const limiter = rateLimit({
 // Apply rate limiting to all routes
 app.use('/api/', limiter);
 
-// CORS configuration
+// CORS configuration - Simplified and robust
 app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = process.env.NODE_ENV === 'production' 
-      ? ['https://hotelbeatricesys.com'] 
-      : ['http://localhost:3000', 'http://localhost:3001'];
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://hotelbeatricesys.com' 
+    : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control', 'X-File-Name'],
@@ -97,11 +86,17 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
-// Add CORS headers to all responses
+// Additional CORS headers for all responses
 app.use((req, res, next) => {
   const allowedOrigin = process.env.NODE_ENV === 'production' 
     ? 'https://hotelbeatricesys.com' 
     : 'http://localhost:3000';
+    
+  // Debug CORS requests
+  console.log(`🌐 CORS Request: ${req.method} ${req.originalUrl}`);
+  console.log(`📍 Origin: ${req.headers.origin}`);
+  console.log(`🏭 Environment: ${process.env.NODE_ENV}`);
+  console.log(`✅ Allowed Origin: ${allowedOrigin}`);
     
   res.header('Access-Control-Allow-Origin', allowedOrigin);
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -110,6 +105,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Max-Age', '86400');
   
   if (req.method === 'OPTIONS') {
+    console.log(`🔄 Preflight request handled for: ${req.originalUrl}`);
     res.status(200).end();
     return;
   }
