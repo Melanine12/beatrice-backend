@@ -42,7 +42,7 @@ const http = require('http').createServer(app);
 const { Server } = require('socket.io');
 const io = new Server(http, {
   cors: {
-    origin: process.env.NODE_ENV === 'production' ? ['https://hotelbeatricesys.com'] : ['http://localhost:3000','http://localhost:3001'],
+    origin: ['https://hotelbeatricesys.com', 'http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
   }
@@ -71,11 +71,36 @@ const limiter = rateLimit({
 // Apply rate limiting to all routes
 app.use('/api/', limiter);
 
-// CORS configuration - Simplified and robust
+// CORS configuration - Production-ready with fallback
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://hotelbeatricesys.com' 
-    : ['http://localhost:3000', 'http://localhost:3001'],
+  origin: function (origin, callback) {
+    // List of allowed origins
+    const allowedOrigins = [
+      'https://hotelbeatricesys.com',
+      'http://localhost:3000',
+      'http://localhost:3001'
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    
+    // For production, be more strict
+    if (process.env.NODE_ENV === 'production') {
+      // Only allow hotelbeatricesys.com in production
+      if (origin === 'https://hotelbeatricesys.com') {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS in production'));
+    }
+    
+    // In development, allow all localhost origins
+    callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control', 'X-File-Name'],
@@ -88,9 +113,16 @@ app.options('*', cors());
 
 // Additional CORS headers for all responses
 app.use((req, res, next) => {
-  const allowedOrigin = process.env.NODE_ENV === 'production' 
-    ? 'https://hotelbeatricesys.com' 
-    : 'http://localhost:3000';
+  // Determine allowed origin based on request origin and environment
+  let allowedOrigin = 'http://localhost:3000'; // default
+  
+  if (req.headers.origin) {
+    if (req.headers.origin === 'https://hotelbeatricesys.com') {
+      allowedOrigin = 'https://hotelbeatricesys.com';
+    } else if (req.headers.origin.startsWith('http://localhost:')) {
+      allowedOrigin = req.headers.origin;
+    }
+  }
     
   // Debug CORS requests
   console.log(`🌐 CORS Request: ${req.method} ${req.originalUrl}`);
@@ -186,8 +218,9 @@ app.get('/api/health', async (req, res) => {
       database: 'Connected',
       uptime: process.uptime(),
       cors: {
-        origin: process.env.NODE_ENV === 'production' ? 'https://hotelbeatricesys.com' : 'http://localhost:3000',
-        environment: process.env.NODE_ENV || 'development'
+        origin: req.headers.origin || 'No origin',
+        environment: process.env.NODE_ENV || 'development',
+        allowedOrigins: ['https://hotelbeatricesys.com', 'http://localhost:3000', 'http://localhost:3001']
       }
     });
   } catch (error) {
@@ -208,8 +241,10 @@ app.get('/api/cors-test', (req, res) => {
     origin: req.headers.origin,
     timestamp: new Date().toISOString(),
     cors: {
-      allowedOrigin: process.env.NODE_ENV === 'production' ? 'https://hotelbeatricesys.com' : 'http://localhost:3000',
-      environment: process.env.NODE_ENV || 'development'
+      requestOrigin: req.headers.origin || 'No origin',
+      environment: process.env.NODE_ENV || 'development',
+      allowedOrigins: ['https://hotelbeatricesys.com', 'http://localhost:3000', 'http://localhost:3001'],
+      isAllowed: ['https://hotelbeatricesys.com', 'http://localhost:3000', 'http://localhost:3001'].includes(req.headers.origin)
     }
   });
 });
