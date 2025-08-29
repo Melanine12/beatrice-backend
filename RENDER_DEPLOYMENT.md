@@ -130,3 +130,4 @@ En cas de problème persistant :
 2. Testez l'endpoint `/api/health`
 3. Vérifiez la configuration CORS
 4. Contactez le support si nécessaire
+# Trigger Render redeploy - Ven 29 aoû 2025 02:06:04 WAT
