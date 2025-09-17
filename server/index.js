@@ -35,6 +35,9 @@ const buanderieRoutes = require('./routes/buanderie');
 const paiementsPartielsRoutes = require('./routes/paiements-partiels');
 const rappelsPaiementRoutes = require('./routes/rappels-paiement');
 const resetRoutes = require('./routes/reset');
+const employeeRoutes = require('./routes/employees');
+const organigrammeRoutes = require('./routes/organigramme');
+const bonsMenageRoutes = require('./routes/bons-menage');
 
 const app = express();
 // Socket.io for realtime notifications
@@ -205,6 +208,9 @@ app.use('/api/buanderie', buanderieRoutes);
 app.use('/api/paiements-partiels', paiementsPartielsRoutes);
 app.use('/api/rappels-paiement', rappelsPaiementRoutes);
 app.use('/api/reset', resetRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/organigramme', organigrammeRoutes);
+app.use('/api/bons-menage', bonsMenageRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {

@@ -29,6 +29,7 @@ const TransfertArticle = require('./TransfertArticle');
 const Buanderie = require('./Buanderie');
 const PaiementPartiel = require('./PaiementPartiel');
 const RappelPaiement = require('./RappelPaiement');
+const BonMenage = require('./BonMenage');
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -410,6 +411,44 @@ Depense.belongsTo(User, {
   as: 'responsablePaiement' 
 });
 
+// Associations pour les bons de ménage
+User.hasMany(BonMenage, { 
+  foreignKey: 'utilisateur_id', 
+  as: 'BonsMenageUtilisateur' 
+});
+BonMenage.belongsTo(User, { 
+  foreignKey: 'utilisateur_id', 
+  as: 'utilisateur' 
+});
+
+User.hasMany(BonMenage, { 
+  foreignKey: 'created_by', 
+  as: 'BonsMenageCreateur' 
+});
+BonMenage.belongsTo(User, { 
+  foreignKey: 'created_by', 
+  as: 'createur' 
+});
+
+User.hasMany(BonMenage, { 
+  foreignKey: 'updated_by', 
+  as: 'BonsMenageModificateur' 
+});
+BonMenage.belongsTo(User, { 
+  foreignKey: 'updated_by', 
+  as: 'modificateur' 
+});
+
+// Associations pour les bons de ménage et chambres
+Chambre.hasMany(BonMenage, { 
+  foreignKey: 'chambre_id', 
+  as: 'BonsMenage' 
+});
+BonMenage.belongsTo(Chambre, { 
+  foreignKey: 'chambre_id', 
+  as: 'chambre' 
+});
+
 module.exports = {
   User,
   Chambre,
@@ -441,5 +480,6 @@ module.exports = {
   TransfertArticle,
   Buanderie,
   PaiementPartiel,
-  RappelPaiement
+  RappelPaiement,
+  BonMenage
 }; 
