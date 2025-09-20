@@ -244,7 +244,7 @@ router.get('/', async (req, res) => {
         {
           model: Departement,
           as: 'departement',
-          attributes: ['id', 'nom']
+          attributes: ['id', 'nom', 'responsable_id']
         },
         {
           model: SousDepartement,
@@ -314,7 +314,7 @@ router.get('/:id', async (req, res) => {
         {
           model: Departement,
           as: 'departement',
-          attributes: ['id', 'nom']
+          attributes: ['id', 'nom', 'responsable_id']
         },
         {
           model: SousDepartement,

@@ -194,7 +194,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // DELETE /api/demandes-affectation/:id - delete
-router.delete('/:id', [requireRole(['Superviseur', 'Superviseur Stock', 'Auditeur', 'Administrateur', 'Patron'])], async (req, res) => {
+router.delete('/:id', [requireRole(['Superviseur Stock', 'Auditeur'])], async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const demande = await DemandeAffectation.findByPk(id);

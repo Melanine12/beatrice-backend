@@ -92,7 +92,14 @@ router.get('/', async (req, res, next) => {
         {
           model: Problematique,
           as: 'problematique',
-          attributes: ['id', 'titre', 'type', 'statut']
+          attributes: ['id', 'titre', 'type', 'statut'],
+          include: [
+            {
+              model: Departement,
+              as: 'departement',
+              attributes: ['id', 'nom', 'responsable_id']
+            }
+          ]
         }
       ],
       limit: limitNum,

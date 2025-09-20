@@ -34,6 +34,7 @@ router.get('/', [
 
     const { count, rows: departements } = await Departement.findAndCountAll({
       where: whereClause,
+      attributes: ['id', 'nom', 'code', 'description', 'responsable_id', 'budget_annuel', 'statut', 'couleur', 'date_creation'],
       include: [
         {
           model: User,
@@ -70,6 +71,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const departement = await Departement.findByPk(id, {
+      attributes: ['id', 'nom', 'code', 'description', 'responsable_id', 'budget_annuel', 'statut', 'couleur', 'date_creation'],
       include: [
         {
           model: User,
