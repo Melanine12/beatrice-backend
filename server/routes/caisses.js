@@ -191,7 +191,7 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/caisses - Créer une nouvelle caisse
 router.post('/', [
-  requireRole('Superviseur'),
+  requireRole(['Superviseur', 'Superviseur Finance']),
   body('nom')
     .trim()
     .isLength({ min: 2, max: 100 })
@@ -318,7 +318,7 @@ router.post('/', [
 
 // PUT /api/caisses/:id - Mettre à jour une caisse
 router.put('/:id', [
-  requireRole('Superviseur'),
+  requireRole(['Superviseur', 'Superviseur Finance']),
   body('nom')
     .optional()
     .trim()
@@ -390,7 +390,7 @@ router.put('/:id', [
 });
 
 // DELETE /api/caisses/:id - Supprimer une caisse
-router.delete('/:id', requireRole('Superviseur'), async (req, res) => {
+router.delete('/:id', requireRole(['Superviseur', 'Superviseur Finance']), async (req, res) => {
   try {
     const caisse = await Caisse.findByPk(req.params.id);
     if (!caisse) {
@@ -416,7 +416,7 @@ router.delete('/:id', requireRole('Superviseur'), async (req, res) => {
 });
 
 // PATCH /api/caisses/:id/status - Changer le statut d'une caisse
-router.patch('/:id/status', requireRole('Superviseur'), async (req, res) => {
+router.patch('/:id/status', requireRole(['Superviseur', 'Superviseur Finance']), async (req, res) => {
   try {
     const { statut } = req.body;
     
@@ -452,7 +452,7 @@ router.patch('/:id/status', requireRole('Superviseur'), async (req, res) => {
 });
 
 // POST /api/caisses/:id/recalculer-solde - Recalculer le solde actuel d'une caisse
-router.post('/:id/recalculer-solde', requireRole(['Superviseur', 'Administrateur', 'Patron']), async (req, res) => {
+router.post('/:id/recalculer-solde', requireRole(['Superviseur', 'Superviseur Finance', 'Administrateur', 'Patron']), async (req, res) => {
   try {
     console.log('🔄 Début du recalcul du solde pour la caisse:', req.params.id);
     
@@ -499,7 +499,7 @@ router.post('/:id/recalculer-solde', requireRole(['Superviseur', 'Administrateur
 });
 
 // GET /api/caisses/:id/transactions - Récupérer les transactions d'une caisse avec pagination
-router.get('/:id/transactions', requireRole(['Superviseur', 'Administrateur', 'Patron']), async (req, res) => {
+router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance', 'Administrateur', 'Patron']), async (req, res) => {
   try {
     console.log('🔍 Récupération des transactions pour la caisse:', req.params.id);
     
@@ -677,7 +677,7 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Administrateur', 'P
 });
 
 // GET /api/caisses/:id/transactions/pdf - Générer un rapport PDF des transactions
-router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Administrateur', 'Patron']), async (req, res) => {
+router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Superviseur Finance', 'Administrateur', 'Patron']), async (req, res) => {
   try {
     console.log('🔍 Génération du rapport PDF pour la caisse:', req.params.id);
     
