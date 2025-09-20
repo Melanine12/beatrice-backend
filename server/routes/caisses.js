@@ -773,6 +773,8 @@ router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Superviseur Fin
     const totalDepenses = allDepenses.reduce((sum, d) => sum + parseFloat(d.montant || 0), 0);
     const soldeInitial = parseFloat(caisse.solde_initial || 0);
     
+    // Les paiements partiels sont des DÉPENSES pour la caisse (argent qui sort)
+    // Total des dépenses = dépenses + paiements partiels
     const totalDepensesComplet = totalDepenses + totalPaiementsPartiels;
     const soldeCalcule = soldeInitial + totalPaiements - totalDepensesComplet;
 

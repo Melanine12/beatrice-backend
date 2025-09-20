@@ -22,7 +22,8 @@ router.get('/', [
   query('statut').optional().isIn(['en_attente', 'approuvee', 'rejetee', 'annulee']),
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('search').optional().isString()
+  query('search').optional().isString(),
+  query('user_id').optional().isInt({ min: 1 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -30,14 +31,23 @@ router.get('/', [
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
-    const { statut, page = 1, limit = 20, search } = req.query;
+    const { statut, page = 1, limit = 20, search, user_id } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
     if (statut) where.statut = statut;
 
-    // Guichetier sees only own requests
-    if (req.user.role === 'Guichetier') {
+    // Déterminer les permissions de l'utilisateur
+    const canViewAll = req.user.role === 'Superviseur Stock' || req.user.role === 'Auditeur';
+    
+    if (canViewAll) {
+      // Superviseur Stock et Auditeur voient toutes les demandes
+      // Si user_id est fourni, filtrer par cet utilisateur
+      if (user_id) {
+        where.demandeur_id = parseInt(user_id, 10);
+      }
+    } else {
+      // Autres utilisateurs voient seulement leurs propres demandes
       where.demandeur_id = req.user.id;
     }
 
@@ -170,8 +180,10 @@ router.get('/:id', async (req, res) => {
       ]
     });
     if (!demande) return res.status(404).json({ success: false, message: 'Demande non trouvée' });
-    // If requester is Guichetier, only allow access to own demande
-    if (req.user.role === 'Guichetier' && demande.demandeur_id !== req.user.id) {
+    
+    // Vérifier les permissions d'accès
+    const canViewAll = req.user.role === 'Superviseur Stock' || req.user.role === 'Auditeur';
+    if (!canViewAll && demande.demandeur_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Accès refusé' });
     }
     res.json({ success: true, data: demande });
@@ -182,7 +194,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // DELETE /api/demandes-affectation/:id - delete
-router.delete('/:id', [requireRole(['Superviseur', 'Administrateur', 'Patron'])], async (req, res) => {
+router.delete('/:id', [requireRole(['Superviseur', 'Superviseur Stock', 'Auditeur', 'Administrateur', 'Patron'])], async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const demande = await DemandeAffectation.findByPk(id);
@@ -199,7 +211,7 @@ router.delete('/:id', [requireRole(['Superviseur', 'Administrateur', 'Patron'])]
 
 // PUT /api/demandes-affectation/:id/approve-lines - approve quantities per line
 router.put('/:id/approve-lines', [
-  requireRole(['Superviseur', 'Administrateur', 'Patron']),
+  requireRole(['Superviseur', 'Superviseur Stock', 'Auditeur', 'Administrateur', 'Patron']),
   body('approvals').isArray({ min: 1 }),
   body('approvals.*.ligne_id').isInt({ min: 1 }),
   body('approvals.*.quantite_approvee').isInt({ min: 0 })
