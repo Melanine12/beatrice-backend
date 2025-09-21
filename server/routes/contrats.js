@@ -160,7 +160,7 @@ router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), 
       const existingContrat = await Contrat.findOne({ 
         where: { 
           numero_contrat: req.body.numero_contrat,
-          id: { [require('sequelize').Op.ne]: req.params.id
+          id: { [require('sequelize').Op.ne]: req.params.id }
         } 
       });
       if (existingContrat) {
