@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { DocumentRH, Contrat, User } = require('../models');
-const { requireRole } = require('../middleware/auth');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const cloudinary = require('../config/cloudinary');
 const { body, validationResult } = require('express-validator');
+
+// Apply authentication to all routes
+router.use(authenticateToken);
 
 // Middleware de validation
 const validateDocument = [
