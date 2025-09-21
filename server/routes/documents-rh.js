@@ -35,13 +35,17 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
     if (statut) where.statut = statut;
     if (confidentialite) where.confidentialite = confidentialite;
 
-    const documents = await DocumentRH.findAndCountAll({
+    // D'abord, récupérer le nombre total
+    const total = await DocumentRH.count({ where });
+    
+    // Ensuite, récupérer les documents avec les relations
+    const documents = await DocumentRH.findAll({
       where,
       include: [
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: Contrat,
@@ -51,7 +55,7 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ],
       limit: parseInt(limit),
@@ -61,12 +65,12 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
 
     res.json({
       success: true,
-      data: documents.rows,
+      data: documents,
       pagination: {
-        total: documents.count,
+        total: total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(documents.count / limit)
+        pages: Math.ceil(total / limit)
       }
     });
   } catch (error) {
@@ -83,7 +87,7 @@ router.get('/:id', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste', 'telephone']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role', 'telephone']
         },
         {
           model: Contrat,
@@ -93,7 +97,7 @@ router.get('/:id', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ]
     });
@@ -162,7 +166,7 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: Contrat,
@@ -172,7 +176,7 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ]
     });
@@ -222,7 +226,7 @@ router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), 
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: Contrat,
@@ -232,7 +236,7 @@ router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), 
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ]
     });
@@ -277,7 +281,7 @@ router.get('/employe/:employe_id', requireRole(['Superviseur RH', 'Administrateu
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: Contrat,
@@ -287,7 +291,7 @@ router.get('/employe/:employe_id', requireRole(['Superviseur RH', 'Administrateu
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ],
       order: [['date_creation', 'DESC']]
@@ -309,7 +313,7 @@ router.get('/contrat/:contrat_id', requireRole(['Superviseur RH', 'Administrateu
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: Contrat,
@@ -319,7 +323,7 @@ router.get('/contrat/:contrat_id', requireRole(['Superviseur RH', 'Administrateu
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ],
       order: [['date_creation', 'DESC']]
