@@ -48,10 +48,15 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
     if (type_contrat) where.type_contrat = type_contrat;
     if (statut) where.statut = statut;
 
+    console.log('Where clause:', where);
+
     // D'abord, récupérer le nombre total
+    console.log('Récupération du nombre total...');
     const total = await Contrat.count({ where });
+    console.log('Total trouvé:', total);
     
     // Ensuite, récupérer les contrats avec les relations
+    console.log('Récupération des contrats...');
     const contrats = await Contrat.findAll({
       where,
       include: [
@@ -71,6 +76,9 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
       order: [['date_creation', 'DESC']]
     });
 
+    console.log('Contrats récupérés:', contrats.length);
+    console.log('Envoi de la réponse...');
+
     res.json({
       success: true,
       data: contrats,
@@ -83,7 +91,13 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
     });
   } catch (error) {
     console.error('Erreur lors de la récupération des contrats:', error);
-    res.status(500).json({ success: false, message: 'Erreur serveur' });
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur serveur',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
