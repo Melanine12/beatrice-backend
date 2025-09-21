@@ -18,7 +18,7 @@ const validateContrat = [
 ];
 
 // GET /api/contrats - Récupérer tous les contrats
-router.get('/', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
+router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 'Patron']), async (req, res) => {
   try {
     const { page = 1, limit = 10, employe_id, type_contrat, statut } = req.query;
     const offset = (page - 1) * limit;
@@ -64,7 +64,7 @@ router.get('/', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), asy
 });
 
 // GET /api/contrats/:id - Récupérer un contrat par ID
-router.get('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
+router.get('/:id', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 'Patron']), async (req, res) => {
   try {
     const contrat = await Contrat.findByPk(req.params.id, {
       include: [
@@ -93,7 +93,7 @@ router.get('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), 
 });
 
 // POST /api/contrats - Créer un nouveau contrat
-router.post('/', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), validateContrat, async (req, res) => {
+router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 'Patron']), validateContrat, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -143,7 +143,7 @@ router.post('/', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), va
 });
 
 // PUT /api/contrats/:id - Mettre à jour un contrat
-router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), validateContrat, async (req, res) => {
+router.put('/:id', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 'Patron']), validateContrat, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -213,7 +213,7 @@ router.delete('/:id', requireRole(['Administrateur', 'Patron']), async (req, res
 });
 
 // GET /api/contrats/employe/:employe_id - Récupérer les contrats d'un employé
-router.get('/employe/:employe_id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
+router.get('/employe/:employe_id', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 'Patron']), async (req, res) => {
   try {
     const contrats = await Contrat.findAll({
       where: { employe_id: req.params.employe_id },

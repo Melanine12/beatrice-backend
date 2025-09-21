@@ -21,7 +21,7 @@ const validateDocument = [
 ];
 
 // GET /api/documents-rh - Récupérer tous les documents
-router.get('/', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
+router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 'Patron']), async (req, res) => {
   try {
     const { page = 1, limit = 10, employe_id, type_document, statut, confidentialite } = req.query;
     const offset = (page - 1) * limit;
@@ -73,7 +73,7 @@ router.get('/', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), asy
 });
 
 // GET /api/documents-rh/:id - Récupérer un document par ID
-router.get('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
+router.get('/:id', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 'Patron']), async (req, res) => {
   try {
     const document = await DocumentRH.findByPk(req.params.id, {
       include: [
@@ -107,7 +107,7 @@ router.get('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), 
 });
 
 // POST /api/documents-rh - Créer un nouveau document avec upload de fichier
-router.post('/', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), upload.single('fichier'), validateDocument, async (req, res) => {
+router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 'Patron']), upload.single('fichier'), validateDocument, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
