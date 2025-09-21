@@ -30,6 +30,8 @@ const Buanderie = require('./Buanderie');
 const PaiementPartiel = require('./PaiementPartiel');
 const RappelPaiement = require('./RappelPaiement');
 const BonMenage = require('./BonMenage');
+const Contrat = require('./Contrat');
+const DocumentRH = require('./DocumentRH');
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -449,6 +451,23 @@ BonMenage.belongsTo(Chambre, {
   as: 'chambre' 
 });
 
+// Associations pour les contrats
+User.hasMany(Contrat, { foreignKey: 'employe_id', as: 'Contrats' });
+Contrat.belongsTo(User, { foreignKey: 'employe_id', as: 'employe' });
+
+User.hasMany(Contrat, { foreignKey: 'cree_par', as: 'ContratsCrees' });
+Contrat.belongsTo(User, { foreignKey: 'cree_par', as: 'createur' });
+
+// Associations pour les documents RH
+User.hasMany(DocumentRH, { foreignKey: 'employe_id', as: 'DocumentsRH' });
+DocumentRH.belongsTo(User, { foreignKey: 'employe_id', as: 'employe' });
+
+Contrat.hasMany(DocumentRH, { foreignKey: 'contrat_id', as: 'Documents' });
+DocumentRH.belongsTo(Contrat, { foreignKey: 'contrat_id', as: 'contrat' });
+
+User.hasMany(DocumentRH, { foreignKey: 'cree_par', as: 'DocumentsRHCrees' });
+DocumentRH.belongsTo(User, { foreignKey: 'cree_par', as: 'createur' });
+
 module.exports = {
   User,
   Chambre,
@@ -481,5 +500,7 @@ module.exports = {
   Buanderie,
   PaiementPartiel,
   RappelPaiement,
-  BonMenage
+  BonMenage,
+  Contrat,
+  DocumentRH
 }; 
