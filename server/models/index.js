@@ -30,8 +30,9 @@ const Buanderie = require('./Buanderie');
 const PaiementPartiel = require('./PaiementPartiel');
 const RappelPaiement = require('./RappelPaiement');
 const BonMenage = require('./BonMenage');
-const Contrat = require('./Contrat');
-const DocumentRH = require('./DocumentRH');
+const { sequelize } = require('../config/database');
+const Contrat = require('./Contrat')(sequelize);
+const DocumentRH = require('./DocumentRH')(sequelize);
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
