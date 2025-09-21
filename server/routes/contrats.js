@@ -20,9 +20,26 @@ const validateContrat = [
   body('statut').optional().isIn(['Actif', 'Expiré', 'Résilié', 'Suspendu']).withMessage('Statut invalide')
 ];
 
+// GET /api/contrats/test - Route de test sans authentification
+router.get('/test', async (req, res) => {
+  try {
+    console.log('Test route contrats appelée');
+    const contrats = await Contrat.findAll({
+      limit: 5,
+      order: [['date_creation', 'DESC']]
+    });
+    console.log('Contrats trouvés:', contrats.length);
+    res.json({ success: true, data: contrats, message: 'Test réussi' });
+  } catch (error) {
+    console.error('Erreur test contrats:', error);
+    res.status(500).json({ success: false, message: 'Erreur test: ' + error.message });
+  }
+});
+
 // GET /api/contrats - Récupérer tous les contrats
 router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 'Patron']), async (req, res) => {
   try {
+    console.log('Route contrats appelée par utilisateur:', req.user?.id);
     const { page = 1, limit = 10, employe_id, type_contrat, statut } = req.query;
     const offset = (page - 1) * limit;
 
@@ -31,7 +48,11 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
     if (type_contrat) where.type_contrat = type_contrat;
     if (statut) where.statut = statut;
 
-    const contrats = await Contrat.findAndCountAll({
+    // D'abord, récupérer le nombre total
+    const total = await Contrat.count({ where });
+    
+    // Ensuite, récupérer les contrats avec les relations
+    const contrats = await Contrat.findAll({
       where,
       include: [
         {
@@ -52,12 +73,12 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
 
     res.json({
       success: true,
-      data: contrats.rows,
+      data: contrats,
       pagination: {
-        total: contrats.count,
+        total: total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(contrats.count / limit)
+        pages: Math.ceil(total / limit)
       }
     });
   } catch (error) {
