@@ -4,6 +4,7 @@ const Tache = require('../models/Tache');
 const User = require('../models/User');
 const Chambre = require('../models/Chambre');
 const Problematique = require('../models/Problematique');
+const Departement = require('../models/Departement');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
@@ -298,10 +299,37 @@ router.put('/:id', [
       });
     }
 
-    // Check permissions (only assignee, creator, or higher roles can update)
-    if (tache.assigne_id !== req.user.id && 
-        tache.createur_id !== req.user.id && 
-        !req.user.hasPermission('Superviseur')) {
+    // Check permissions (only assignee, creator, department manager, or higher roles can update)
+    let canUpdate = false;
+    
+    // Check if user is assignee or creator
+    if (tache.assigne_id === req.user.id || tache.createur_id === req.user.id) {
+      canUpdate = true;
+    }
+    
+    // Check if user has Superviseur permission
+    if (req.user.hasPermission('Superviseur')) {
+      canUpdate = true;
+    }
+    
+    // Check if user is department manager (if task is linked to a problematique with a department)
+    if (tache.problematique_id) {
+      const problematique = await Problematique.findByPk(tache.problematique_id, {
+        include: [
+          {
+            model: Departement,
+            as: 'departement',
+            attributes: ['id', 'nom', 'responsable_id']
+          }
+        ]
+      });
+      
+      if (problematique && problematique.departement && problematique.departement.responsable_id === req.user.id) {
+        canUpdate = true;
+      }
+    }
+    
+    if (!canUpdate) {
       return res.status(403).json({ 
         error: 'Insufficient permissions',
         message: 'Permissions insuffisantes pour modifier cette tâche'
@@ -371,9 +399,36 @@ router.post('/:id/start', async (req, res) => {
     }
 
     // Check if user can start the task
-    if (tache.assigne_id !== req.user.id && 
-        tache.createur_id !== req.user.id && 
-        !req.user.hasPermission('Superviseur')) {
+    let canStart = false;
+    
+    // Check if user is assignee or creator
+    if (tache.assigne_id === req.user.id || tache.createur_id === req.user.id) {
+      canStart = true;
+    }
+    
+    // Check if user has Superviseur permission
+    if (req.user.hasPermission('Superviseur')) {
+      canStart = true;
+    }
+    
+    // Check if user is department manager (if task is linked to a problematique with a department)
+    if (tache.problematique_id) {
+      const problematique = await Problematique.findByPk(tache.problematique_id, {
+        include: [
+          {
+            model: Departement,
+            as: 'departement',
+            attributes: ['id', 'nom', 'responsable_id']
+          }
+        ]
+      });
+      
+      if (problematique && problematique.departement && problematique.departement.responsable_id === req.user.id) {
+        canStart = true;
+      }
+    }
+    
+    if (!canStart) {
       return res.status(403).json({ 
         error: 'Insufficient permissions',
         message: 'Permissions insuffisantes pour démarrer cette tâche'
@@ -417,9 +472,36 @@ router.post('/:id/complete', async (req, res) => {
     }
 
     // Check if user can complete the task
-    if (tache.assigne_id !== req.user.id && 
-        tache.createur_id !== req.user.id && 
-        !req.user.hasPermission('Superviseur')) {
+    let canComplete = false;
+    
+    // Check if user is assignee or creator
+    if (tache.assigne_id === req.user.id || tache.createur_id === req.user.id) {
+      canComplete = true;
+    }
+    
+    // Check if user has Superviseur permission
+    if (req.user.hasPermission('Superviseur')) {
+      canComplete = true;
+    }
+    
+    // Check if user is department manager (if task is linked to a problematique with a department)
+    if (tache.problematique_id) {
+      const problematique = await Problematique.findByPk(tache.problematique_id, {
+        include: [
+          {
+            model: Departement,
+            as: 'departement',
+            attributes: ['id', 'nom', 'responsable_id']
+          }
+        ]
+      });
+      
+      if (problematique && problematique.departement && problematique.departement.responsable_id === req.user.id) {
+        canComplete = true;
+      }
+    }
+    
+    if (!canComplete) {
       return res.status(403).json({ 
         error: 'Insufficient permissions',
         message: 'Permissions insuffisantes pour terminer cette tâche'
