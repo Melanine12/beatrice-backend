@@ -675,10 +675,28 @@ router.put('/:id', [
       });
     }
 
-    // Check permissions (only assignee, reporter, or higher roles can update)
-    if (problematique.assigne_id !== req.user.id && 
-        problematique.rapporteur_id !== req.user.id && 
-        !req.user.hasPermission('Superviseur')) {
+    // Check permissions (only assignee, reporter, department manager, or higher roles can update)
+    let canUpdate = false;
+    
+    // Check if user is assignee or reporter
+    if (problematique.assigne_id === req.user.id || problematique.rapporteur_id === req.user.id) {
+      canUpdate = true;
+    }
+    
+    // Check if user has Superviseur permission
+    if (req.user.hasPermission('Superviseur')) {
+      canUpdate = true;
+    }
+    
+    // Check if user is department manager
+    if (problematique.departement_id) {
+      const departement = await Departement.findByPk(problematique.departement_id);
+      if (departement && departement.responsable_id === req.user.id) {
+        canUpdate = true;
+      }
+    }
+    
+    if (!canUpdate) {
       return res.status(403).json({ 
         error: 'Insufficient permissions',
         message: 'Permissions insuffisantes pour modifier cette problématique'
