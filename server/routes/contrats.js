@@ -63,12 +63,12 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ],
       limit: parseInt(limit),
@@ -109,12 +109,12 @@ router.get('/:id', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste', 'telephone']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role', 'telephone']
         },
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ]
     });
@@ -163,12 +163,12 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ]
     });
@@ -217,12 +217,12 @@ router.put('/:id', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ]
     });
@@ -259,12 +259,12 @@ router.get('/employe/:employe_id', requireRole(['Superviseur RH', 'Superviseur',
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenoms', 'nom_famille', 'email', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: User,
           as: 'createur',
-          attributes: ['id', 'prenoms', 'nom_famille']
+          attributes: ['id', 'prenom', 'nom']
         }
       ],
       order: [['date_creation', 'DESC']]
