@@ -63,7 +63,7 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenom', 'nom', 'prenoms', 'nom_famille', 'email', 'role', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: User,
@@ -163,7 +163,7 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
         {
           model: User,
           as: 'employe',
-          attributes: ['id', 'prenom', 'nom', 'prenoms', 'nom_famille', 'email', 'role', 'poste']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: User,
