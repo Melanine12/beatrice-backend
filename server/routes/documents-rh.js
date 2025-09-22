@@ -449,20 +449,96 @@ router.get('/:id/download', requireRole(['Superviseur RH', 'Administrateur', 'Pa
       console.log('📄 Fichier non-PDF - URL générée:', downloadUrl);
     }
 
-    res.json({ 
-      success: true, 
-      data: {
-        url: downloadUrl,
-        nom_fichier: document.nom_fichier,
-        nom_fichier_original: document.nom_fichier_original,
-        type_mime: document.type_mime,
-        is_pdf: isPdf,
-        public_id: document.public_id_cloudinary
-      }
-    });
+    // Pour les PDFs, utiliser le proxy au lieu de l'URL directe
+    if (isPdf) {
+      const proxyUrl = `${req.protocol}://${req.get('host')}/api/documents-rh/${document.id}/proxy`;
+      console.log('📄 PDF - Utilisation du proxy:', proxyUrl);
+      
+      res.json({ 
+        success: true, 
+        data: {
+          url: proxyUrl,
+          nom_fichier: document.nom_fichier,
+          nom_fichier_original: document.nom_fichier_original,
+          type_mime: document.type_mime,
+          is_pdf: isPdf,
+          public_id: document.public_id_cloudinary,
+          use_proxy: true
+        }
+      });
+    } else {
+      res.json({ 
+        success: true, 
+        data: {
+          url: downloadUrl,
+          nom_fichier: document.nom_fichier,
+          nom_fichier_original: document.nom_fichier_original,
+          type_mime: document.type_mime,
+          is_pdf: isPdf,
+          public_id: document.public_id_cloudinary,
+          use_proxy: false
+        }
+      });
+    }
   } catch (error) {
     console.error('Erreur lors du téléchargement du document:', error);
     res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
+// GET /api/documents-rh/:id/proxy - Proxy pour servir les PDFs directement
+router.get('/:id/proxy', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
+  try {
+    const document = await DocumentRH.findByPk(req.params.id);
+    if (!document) {
+      return res.status(404).json({ success: false, message: 'Document non trouvé' });
+    }
+
+    const isPdf = document.type_mime === 'application/pdf' || document.nom_fichier.endsWith('.pdf');
+    
+    if (!isPdf) {
+      return res.status(400).json({ success: false, message: 'Cette route est uniquement pour les PDFs' });
+    }
+
+    console.log('🔄 Proxy PDF pour:', document.public_id_cloudinary);
+
+    // Utiliser le service Cloudinary pour récupérer le fichier
+    const CloudinaryDocumentService = require('../services/cloudinaryDocumentService');
+    const cloudinaryService = new CloudinaryDocumentService();
+    
+    // Générer une URL signée pour récupérer le fichier
+    const signedUrl = cloudinaryService.generateSignedUrl(document.public_id_cloudinary, true);
+    
+    if (!signedUrl) {
+      return res.status(500).json({ success: false, message: 'Impossible de générer l\'URL signée' });
+    }
+
+    console.log('🔐 URL signée générée pour proxy:', signedUrl);
+
+    // Faire une requête vers Cloudinary pour récupérer le fichier
+    const axios = require('axios');
+    const response = await axios.get(signedUrl, {
+      responseType: 'stream',
+      timeout: 30000
+    });
+
+    // Configurer les headers pour le téléchargement
+    res.setHeader('Content-Type', document.type_mime);
+    res.setHeader('Content-Disposition', `attachment; filename="${document.nom_fichier_original}"`);
+    res.setHeader('Content-Length', response.headers['content-length'] || '');
+    
+    console.log('📤 Envoi du PDF via proxy...');
+
+    // Streamer le fichier vers la réponse
+    response.data.pipe(res);
+
+  } catch (error) {
+    console.error('❌ Erreur lors du proxy PDF:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors du téléchargement du PDF',
+      error: error.message 
+    });
   }
 });
 
