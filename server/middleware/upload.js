@@ -12,7 +12,7 @@ const storage = new CloudinaryStorage({
       // Préserver l'extension du fichier
       const timestamp = Date.now();
       const random = Math.round(Math.random() * 1000000);
-      const ext = file.originalname.split('.').pop().toLowerCase();
+      const ext = file.originalname.split('.').pop().toLowerCase().trim();
       return `rh_${timestamp}_${random}.${ext}`;
     }
   }
