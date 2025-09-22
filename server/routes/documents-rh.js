@@ -139,11 +139,15 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
       }
     }
 
-    // Vérifier les propriétés du fichier et fournir des valeurs par défaut
-    const fileUrl = req.file.url || `/uploads/${req.file.filename}`;
-    const publicId = req.file.public_id || req.file.filename;
+    // Vérifier que le fichier a été uploadé sur Cloudinary
+    if (!req.file.url || !req.file.public_id) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Erreur lors de l\'upload sur Cloudinary. URL ou public_id manquant.' 
+      });
+    }
     
-    console.log('Fichier uploadé:', {
+    console.log('Fichier uploadé sur Cloudinary:', {
       filename: req.file.filename,
       originalname: req.file.originalname,
       url: req.file.url,
@@ -158,9 +162,9 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
       type_document: req.body.type_document,
       nom_fichier: req.file.filename,
       nom_fichier_original: req.file.originalname,
-      chemin_fichier: fileUrl,
-      url_cloudinary: fileUrl,
-      public_id_cloudinary: publicId,
+      chemin_fichier: req.file.url,
+      url_cloudinary: req.file.url,
+      public_id_cloudinary: req.file.public_id,
       taille_fichier: req.file.size,
       type_mime: req.file.mimetype,
       description: req.body.description || null,

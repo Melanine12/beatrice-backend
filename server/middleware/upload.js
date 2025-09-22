@@ -1,24 +1,27 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const CloudinaryStorage = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 
-// Créer le dossier uploads s'il n'existe pas
-const uploadDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configuration du stockage local temporaire pour tester
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // Générer un nom de fichier unique
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'rh-doc-' + uniqueSuffix + path.extname(file.originalname));
+// Configuration du stockage Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'beatrice_rh_documents',
+    format: async (req, file) => {
+      // Garder le format original du fichier
+      const ext = file.originalname.split('.').pop().toLowerCase();
+      return ext;
+    },
+    public_id: (req, file) => {
+      const timestamp = Date.now();
+      const random = Math.round(Math.random() * 1E9);
+      const name = file.originalname.replace(/\s/g, '_').replace(/\.[^/.]+$/, '');
+      return `rh_doc_${timestamp}_${random}_${name}`;
+    }
   }
 });
+
+console.log('✅ Cloudinary configuré pour l\'upload de fichiers');
 
 // Configuration multer
 const upload = multer({
@@ -27,14 +30,14 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024 // 10 MB file size limit
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf' ||
-        file.mimetype === 'application/msword' ||
-        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        file.mimetype === 'image/jpeg' ||
-        file.mimetype === 'image/png') {
-      cb(null, true);
+    const allowedTypes = /jpeg|jpg|png|pdf|doc|docx|xls|xlsx/;
+    const extname = allowedTypes.test(file.originalname.toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
     } else {
-      cb(new Error('Type de fichier non supporté. Seuls les PDF, Word et images sont autorisés.'), false);
+      cb(new Error('Type de fichier non autorisé. Formats acceptés: jpg, jpeg, png, pdf, doc, docx, xls, xlsx'), false);
     }
   }
 });
