@@ -164,12 +164,8 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
       mimetype: req.file.mimetype
     });
 
-    // Générer un nom de fichier avec extension
-    const originalName = req.file.originalname || 'document';
-    const ext = originalName.split('.').pop() || 'file';
-    const timestamp = Date.now();
-    const random = Math.round(Math.random() * 1000000);
-    const nomFichier = `rh_${timestamp}_${random}.${ext}`;
+    // Utiliser le public_id de Cloudinary qui contient maintenant l'extension
+    const nomFichier = req.file.public_id.split('/').pop(); // Extrait le nom avec extension du public_id
 
     const document = await DocumentRH.create({
       employe_id: req.body.employe_id,

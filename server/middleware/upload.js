@@ -7,7 +7,15 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'beatrice_rh_documents',
-    resource_type: 'raw'
+    resource_type: 'raw',
+    public_id: (req, file) => {
+      // Générer un public_id avec extension
+      const timestamp = Date.now();
+      const random = Math.round(Math.random() * 1000000);
+      const originalName = file.originalname || 'document';
+      const ext = originalName.split('.').pop() || 'file';
+      return `rh_${timestamp}_${random}.${ext}`;
+    }
   }
 });
 
