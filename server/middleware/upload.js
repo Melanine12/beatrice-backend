@@ -13,8 +13,22 @@ const storage = new CloudinaryStorage({
       const timestamp = Date.now();
       const random = Math.round(Math.random() * 1000000);
       const originalName = file.originalname || 'document';
-      const ext = originalName.split('.').pop() || 'file';
-      return `rh_${timestamp}_${random}.${ext}`;
+      
+      // Nettoyer et extraire l'extension de manière robuste
+      const parts = originalName.split('.');
+      let ext = 'file'; // extension par défaut
+      
+      if (parts.length > 1) {
+        ext = parts[parts.length - 1]
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]/g, ''); // Supprimer tous les caractères non alphanumériques
+        if (!ext) ext = 'file';
+      }
+      
+      const publicId = `rh_${timestamp}_${random}.${ext}`;
+      console.log('Generated public_id:', publicId);
+      return publicId;
     }
   }
 });
