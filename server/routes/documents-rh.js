@@ -63,6 +63,14 @@ router.get('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 
       order: [['date_creation', 'DESC']]
     });
 
+    // Log pour debug - voir les noms de fichiers
+    console.log('Documents récupérés:', documents.map(doc => ({
+      id: doc.id,
+      nom_fichier: doc.nom_fichier,
+      nom_fichier_original: doc.nom_fichier_original,
+      public_id_cloudinary: doc.public_id_cloudinary
+    })));
+
     res.json({
       success: true,
       data: documents,
