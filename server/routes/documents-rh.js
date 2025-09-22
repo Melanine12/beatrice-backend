@@ -383,6 +383,39 @@ router.get('/debug', requireRole(['Superviseur RH', 'Administrateur', 'Patron'])
   }
 });
 
+// GET /api/documents-rh/test-url/:id - Tester les URLs générées pour un document
+router.get('/test-url/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
+  try {
+    const document = await DocumentRH.findByPk(req.params.id);
+    if (!document) {
+      return res.status(404).json({ success: false, message: 'Document non trouvé' });
+    }
+
+    const CloudinaryDocumentService = require('../services/cloudinaryDocumentService');
+    const cloudinaryService = new CloudinaryDocumentService();
+    
+    const isPdf = document.type_mime === 'application/pdf' || document.nom_fichier.endsWith('.pdf');
+    
+    const urls = {
+      original_url: document.url_cloudinary,
+      signed_url: cloudinaryService.generateSignedUrl(document.public_id_cloudinary, isPdf),
+      download_url: cloudinaryService.generateDownloadUrl(document.public_id_cloudinary, isPdf),
+      is_pdf: isPdf,
+      public_id: document.public_id_cloudinary,
+      type_mime: document.type_mime
+    };
+
+    res.json({
+      success: true,
+      data: urls,
+      message: 'Test des URLs générées'
+    });
+  } catch (error) {
+    console.error('Erreur lors du test des URLs:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
 // GET /api/documents-rh/:id/download - Télécharger un document
 router.get('/:id/download', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
   try {
@@ -398,19 +431,33 @@ router.get('/:id/download', requireRole(['Superviseur RH', 'Administrateur', 'Pa
     // Déterminer si c'est un PDF
     const isPdf = document.type_mime === 'application/pdf' || document.nom_fichier.endsWith('.pdf');
     
-    // Générer l'URL de téléchargement appropriée
-    const downloadUrl = cloudinaryService.generateDownloadUrl(document.public_id_cloudinary, isPdf);
+    let downloadUrl = document.url_cloudinary; // URL par défaut
     
-    console.log('📄 URL de téléchargement générée:', downloadUrl);
+    if (isPdf) {
+      // Pour les PDFs, essayer d'abord l'URL signée, puis l'URL de téléchargement
+      const signedUrl = cloudinaryService.generateSignedUrl(document.public_id_cloudinary, true);
+      const downloadUrlPdf = cloudinaryService.generateDownloadUrl(document.public_id_cloudinary, true);
+      
+      downloadUrl = signedUrl || downloadUrlPdf || document.url_cloudinary;
+      
+      console.log('📄 PDF - URL signée:', signedUrl);
+      console.log('📄 PDF - URL de téléchargement:', downloadUrlPdf);
+      console.log('📄 PDF - URL finale utilisée:', downloadUrl);
+    } else {
+      // Pour les autres fichiers, utiliser l'URL normale
+      downloadUrl = cloudinaryService.generateDownloadUrl(document.public_id_cloudinary, false) || document.url_cloudinary;
+      console.log('📄 Fichier non-PDF - URL générée:', downloadUrl);
+    }
 
     res.json({ 
       success: true, 
       data: {
-        url: downloadUrl || document.url_cloudinary, // Fallback sur l'URL originale
+        url: downloadUrl,
         nom_fichier: document.nom_fichier,
         nom_fichier_original: document.nom_fichier_original,
         type_mime: document.type_mime,
-        is_pdf: isPdf
+        is_pdf: isPdf,
+        public_id: document.public_id_cloudinary
       }
     });
   } catch (error) {
