@@ -216,7 +216,7 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
 });
 
 // PUT /api/documents-rh/:id - Mettre à jour un document
-router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), validateDocument, async (req, res) => {
+router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), upload.single('fichier'), validateDocument, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -236,7 +236,8 @@ router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), 
       }
     }
 
-    await document.update({
+    // Préparer les données de mise à jour
+    const updateData = {
       contrat_id: req.body.contrat_id || document.contrat_id,
       type_document: req.body.type_document,
       description: req.body.description || document.description,
@@ -245,7 +246,25 @@ router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), 
       statut: req.body.statut || document.statut,
       confidentialite: req.body.confidentialite || document.confidentialite,
       date_modification: new Date()
-    });
+    };
+
+    // Si un nouveau fichier est fourni, le traiter
+    if (req.file) {
+      console.log('🔄 Nouveau fichier fourni, traitement avec CloudinaryDocumentService...');
+      const documentService = new CloudinaryDocumentService();
+      const documentData = await documentService.processAndSaveDocument(req.file, req.body.type_document);
+
+      // Mettre à jour les données du fichier
+      updateData.nom_fichier = documentData.nom_fichier;
+      updateData.nom_fichier_original = documentData.nom_fichier_original;
+      updateData.chemin_fichier = documentData.chemin_fichier;
+      updateData.url_cloudinary = documentData.url_cloudinary;
+      updateData.public_id_cloudinary = documentData.public_id_cloudinary;
+      updateData.taille_fichier = documentData.taille_fichier;
+      updateData.type_mime = documentData.type_mime;
+    }
+
+    await document.update(updateData);
 
     // Récupérer le document mis à jour avec les relations
     const documentMisAJour = await DocumentRH.findByPk(document.id, {
