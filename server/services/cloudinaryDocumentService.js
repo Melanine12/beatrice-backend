@@ -71,14 +71,22 @@ class CloudinaryDocumentService {
       const fileBuffer = fs.readFileSync(filePath);
       console.log('📖 Fichier lu, taille:', fileBuffer.length);
 
+      // Déterminer le resource_type basé sur le type de fichier
+      const ext = path.extname(filePath).toLowerCase();
+      const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+      const resourceType = isImage ? 'image' : 'raw';
+
+      console.log('📋 Type de ressource Cloudinary:', resourceType);
+
       // Upload vers Cloudinary
       const result = await cloudinary.uploader.upload(filePath, {
         folder: folder,
-        resource_type: 'raw', // Pour les documents (PDF, DOC, etc.)
+        resource_type: resourceType,
         use_filename: false,
         unique_filename: true,
         access_mode: 'public', // Forcer l'accès public
-        type: 'upload' // Type d'upload standard
+        type: 'upload', // Type d'upload standard
+        transformation: isImage ? [] : [{ quality: 'auto' }] // Transformation pour les images uniquement
       });
 
       console.log('✅ Document uploadé vers Cloudinary:', result.public_id);
@@ -102,12 +110,12 @@ class CloudinaryDocumentService {
   }
 
   // Supprimer un document de Cloudinary
-  async deleteDocument(publicId) {
+  async deleteDocument(publicId, isImage = false) {
     try {
       console.log('🗑️ Suppression du document Cloudinary:', publicId);
       
       const result = await cloudinary.uploader.destroy(publicId, {
-        resource_type: 'raw',
+        resource_type: isImage ? 'image' : 'raw',
         type: 'upload'
       });
       
@@ -191,6 +199,24 @@ class CloudinaryDocumentService {
       console.error('❌ Erreur lors du traitement du document:', error);
       console.error('📚 Stack trace:', error.stack);
       throw error;
+    }
+  }
+
+  // Générer une URL signée pour les documents privés
+  generateSignedUrl(publicId, isImage = false) {
+    try {
+      const url = cloudinary.url(publicId, {
+        resource_type: isImage ? 'image' : 'raw',
+        type: 'upload',
+        sign_url: true,
+        expires_at: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24 heures
+      });
+      
+      console.log('🔐 URL signée générée pour:', publicId);
+      return url;
+    } catch (error) {
+      console.error('❌ Erreur lors de la génération de l\'URL signée:', error);
+      return null;
     }
   }
 }
