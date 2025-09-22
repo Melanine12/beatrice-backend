@@ -74,9 +74,13 @@ class CloudinaryDocumentService {
       // Déterminer le resource_type basé sur le type de fichier
       const ext = path.extname(filePath).toLowerCase();
       const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
-      const resourceType = isImage ? 'image' : 'raw';
+      const isPdf = ext === '.pdf';
+      
+      // Pour les PDFs, utiliser 'image' pour un meilleur accès public
+      // Pour les autres documents, utiliser 'raw'
+      const resourceType = (isImage || isPdf) ? 'image' : 'raw';
 
-      console.log('📋 Type de ressource Cloudinary:', resourceType);
+      console.log('📋 Type de ressource Cloudinary:', resourceType, 'pour extension:', ext);
 
       // Upload vers Cloudinary
       const result = await cloudinary.uploader.upload(filePath, {
@@ -110,12 +114,12 @@ class CloudinaryDocumentService {
   }
 
   // Supprimer un document de Cloudinary
-  async deleteDocument(publicId, isImage = false) {
+  async deleteDocument(publicId, isImageOrPdf = false) {
     try {
       console.log('🗑️ Suppression du document Cloudinary:', publicId);
       
       const result = await cloudinary.uploader.destroy(publicId, {
-        resource_type: isImage ? 'image' : 'raw',
+        resource_type: isImageOrPdf ? 'image' : 'raw',
         type: 'upload'
       });
       
@@ -203,10 +207,10 @@ class CloudinaryDocumentService {
   }
 
   // Générer une URL signée pour les documents privés
-  generateSignedUrl(publicId, isImage = false) {
+  generateSignedUrl(publicId, isImageOrPdf = false) {
     try {
       const url = cloudinary.url(publicId, {
-        resource_type: isImage ? 'image' : 'raw',
+        resource_type: isImageOrPdf ? 'image' : 'raw',
         type: 'upload',
         sign_url: true,
         expires_at: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24 heures
