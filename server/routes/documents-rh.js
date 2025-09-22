@@ -375,7 +375,8 @@ router.get('/:id/download', requireRole(['Superviseur RH', 'Administrateur', 'Pa
       success: true, 
       data: {
         url: document.url_cloudinary,
-        nom_fichier: document.nom_fichier_original,
+        nom_fichier: document.nom_fichier,
+        nom_fichier_original: document.nom_fichier_original,
         type_mime: document.type_mime
       }
     });
