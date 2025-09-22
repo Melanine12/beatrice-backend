@@ -124,12 +124,21 @@ router.get('/:id', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur
 // POST /api/documents-rh - Créer un nouveau document avec upload de fichier
 router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur', 'Patron']), upload.single('fichier'), validateDocument, async (req, res) => {
   try {
+    console.log('=== DEBUG UPLOAD DOCUMENT ===');
+    console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
+    console.log('File:', req.file);
+    console.log('Content-Type:', req.get('Content-Type'));
+    console.log('================================');
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Erreurs de validation:', errors.array());
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
     if (!req.file) {
+      console.log('❌ Aucun fichier reçu');
       return res.status(400).json({ success: false, message: 'Fichier requis' });
     }
 
