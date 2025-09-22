@@ -12,8 +12,20 @@ const storage = new CloudinaryStorage({
       // Préserver l'extension du fichier
       const timestamp = Date.now();
       const random = Math.round(Math.random() * 1000000);
-      const ext = file.originalname.split('.').pop().toLowerCase().trim();
-      return `rh_${timestamp}_${random}.${ext}`;
+      
+      // Nettoyer et extraire l'extension de manière robuste
+      const originalName = file.originalname || 'file';
+      const parts = originalName.split('.');
+      let ext = 'file'; // extension par défaut
+      
+      if (parts.length > 1) {
+        ext = parts[parts.length - 1].toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+        if (!ext) ext = 'file';
+      }
+      
+      const publicId = `rh_${timestamp}_${random}.${ext}`;
+      console.log('Generated public_id:', publicId);
+      return publicId;
     }
   }
 });
