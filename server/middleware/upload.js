@@ -7,10 +7,12 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'beatrice_rh_documents',
-    resource_type: 'auto',
-    transformation: [
-      { quality: 'auto' }
-    ]
+    resource_type: 'raw',
+    format: async (req, file) => {
+      // Garder le format original du fichier
+      const ext = file.originalname.split('.').pop().toLowerCase();
+      return ext;
+    }
   }
 });
 
