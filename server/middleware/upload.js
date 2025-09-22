@@ -10,9 +10,8 @@ const storage = new CloudinaryStorage({
     resource_type: 'auto',
     public_id: (req, file) => {
       const timestamp = Date.now();
-      const random = Math.round(Math.random() * 1E9);
-      const name = file.originalname.replace(/\s/g, '_').replace(/\.[^/.]+$/, '').substring(0, 30);
-      return `rh_doc_${timestamp}_${random}_${name}`;
+      const random = Math.round(Math.random() * 1000000);
+      return `rh_${timestamp}_${random}`;
     }
   }
 });
