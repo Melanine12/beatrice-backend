@@ -156,11 +156,18 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
       mimetype: req.file.mimetype
     });
 
+    // Générer un nom de fichier avec extension
+    const originalName = req.file.originalname || 'document';
+    const ext = originalName.split('.').pop() || 'file';
+    const timestamp = Date.now();
+    const random = Math.round(Math.random() * 1000000);
+    const nomFichier = `rh_${timestamp}_${random}.${ext}`;
+
     const document = await DocumentRH.create({
       employe_id: req.body.employe_id,
       contrat_id: req.body.contrat_id || null,
       type_document: req.body.type_document,
-      nom_fichier: req.file.filename || req.file.public_id.split('/').pop(),
+      nom_fichier: nomFichier,
       nom_fichier_original: req.file.originalname,
       chemin_fichier: req.file.url,
       url_cloudinary: req.file.url,
