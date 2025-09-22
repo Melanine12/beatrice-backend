@@ -7,7 +7,10 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'beatrice_rh_documents',
-    resource_type: 'auto'
+    resource_type: 'auto',
+    transformation: [
+      { quality: 'auto' }
+    ]
   }
 });
 
