@@ -83,7 +83,7 @@ class CloudinaryDocumentService {
       console.log('📋 Type de ressource Cloudinary:', resourceType, 'pour extension:', ext);
 
       // Upload vers Cloudinary
-      const result = await cloudinary.uploader.upload(filePath, {
+      const uploadOptions = {
         folder: folder,
         resource_type: resourceType,
         use_filename: false,
@@ -91,7 +91,18 @@ class CloudinaryDocumentService {
         access_mode: 'public', // Forcer l'accès public
         type: 'upload', // Type d'upload standard
         transformation: isImage ? [] : [{ quality: 'auto' }] // Transformation pour les images uniquement
-      });
+      };
+
+      // Pour les PDFs, ajouter des options spécifiques
+      if (isPdf) {
+        uploadOptions.quality = 'auto';
+        uploadOptions.format = 'pdf';
+        uploadOptions.flags = 'attachment'; // Forcer le téléchargement
+      }
+
+      console.log('📤 Options d\'upload:', uploadOptions);
+
+      const result = await cloudinary.uploader.upload(filePath, uploadOptions);
 
       console.log('✅ Document uploadé vers Cloudinary:', result.public_id);
 
@@ -220,6 +231,33 @@ class CloudinaryDocumentService {
       return url;
     } catch (error) {
       console.error('❌ Erreur lors de la génération de l\'URL signée:', error);
+      return null;
+    }
+  }
+
+  // Générer une URL de téléchargement direct pour les PDFs
+  generateDownloadUrl(publicId, isPdf = false) {
+    try {
+      if (isPdf) {
+        // Pour les PDFs, utiliser une URL avec flags=attachment pour forcer le téléchargement
+        const url = cloudinary.url(publicId, {
+          resource_type: 'image',
+          type: 'upload',
+          flags: 'attachment',
+          format: 'pdf'
+        });
+        
+        console.log('📄 URL de téléchargement PDF générée pour:', publicId);
+        return url;
+      } else {
+        // Pour les autres fichiers, URL normale
+        return cloudinary.url(publicId, {
+          resource_type: 'image',
+          type: 'upload'
+        });
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la génération de l\'URL de téléchargement:', error);
       return null;
     }
   }

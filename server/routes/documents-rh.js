@@ -391,13 +391,26 @@ router.get('/:id/download', requireRole(['Superviseur RH', 'Administrateur', 'Pa
       return res.status(404).json({ success: false, message: 'Document non trouvé' });
     }
 
+    // Utiliser le service Cloudinary pour générer l'URL de téléchargement
+    const CloudinaryDocumentService = require('../services/cloudinaryDocumentService');
+    const cloudinaryService = new CloudinaryDocumentService();
+    
+    // Déterminer si c'est un PDF
+    const isPdf = document.type_mime === 'application/pdf' || document.nom_fichier.endsWith('.pdf');
+    
+    // Générer l'URL de téléchargement appropriée
+    const downloadUrl = cloudinaryService.generateDownloadUrl(document.public_id_cloudinary, isPdf);
+    
+    console.log('📄 URL de téléchargement générée:', downloadUrl);
+
     res.json({ 
       success: true, 
       data: {
-        url: document.url_cloudinary,
+        url: downloadUrl || document.url_cloudinary, // Fallback sur l'URL originale
         nom_fichier: document.nom_fichier,
         nom_fichier_original: document.nom_fichier_original,
-        type_mime: document.type_mime
+        type_mime: document.type_mime,
+        is_pdf: isPdf
       }
     });
   } catch (error) {
