@@ -139,13 +139,18 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
       }
     }
 
+    // Déterminer si c'est Cloudinary ou stockage local
+    const isCloudinary = req.file.url && req.file.public_id;
+    
     const document = await DocumentRH.create({
       employe_id: req.body.employe_id,
       contrat_id: req.body.contrat_id || null,
       type_document: req.body.type_document,
-      nom_document: req.file.originalname,
-      url_document: req.file.url,
-      public_id: req.file.public_id,
+      nom_fichier: req.file.filename,
+      nom_fichier_original: req.file.originalname,
+      chemin_fichier: isCloudinary ? req.file.url : `/uploads/${req.file.filename}`,
+      url_cloudinary: isCloudinary ? req.file.url : `/uploads/${req.file.filename}`,
+      public_id_cloudinary: isCloudinary ? req.file.public_id : req.file.filename,
       taille_fichier: req.file.size,
       type_mime: req.file.mimetype,
       description: req.body.description || null,
@@ -179,7 +184,13 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
     res.status(201).json({ success: true, data: documentAvecRelations });
   } catch (error) {
     console.error('Erreur lors de la création du document:', error);
-    res.status(500).json({ success: false, message: 'Erreur serveur' });
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur serveur',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
