@@ -7,15 +7,11 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'beatrice_rh_documents',
-    format: async (req, file) => {
-      // Garder le format original du fichier
-      const ext = file.originalname.split('.').pop().toLowerCase();
-      return ext;
-    },
+    resource_type: 'auto',
     public_id: (req, file) => {
       const timestamp = Date.now();
       const random = Math.round(Math.random() * 1E9);
-      const name = file.originalname.replace(/\s/g, '_').replace(/\.[^/.]+$/, '');
+      const name = file.originalname.replace(/\s/g, '_').replace(/\.[^/.]+$/, '').substring(0, 30);
       return `rh_doc_${timestamp}_${random}_${name}`;
     }
   }
