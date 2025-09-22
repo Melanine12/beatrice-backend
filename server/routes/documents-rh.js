@@ -139,15 +139,28 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
       }
     }
 
+    // Vérifier les propriétés du fichier et fournir des valeurs par défaut
+    const fileUrl = req.file.url || `/uploads/${req.file.filename}`;
+    const publicId = req.file.public_id || req.file.filename;
+    
+    console.log('Fichier uploadé:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      url: req.file.url,
+      public_id: req.file.public_id,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    });
+
     const document = await DocumentRH.create({
       employe_id: req.body.employe_id,
       contrat_id: req.body.contrat_id || null,
       type_document: req.body.type_document,
       nom_fichier: req.file.filename,
       nom_fichier_original: req.file.originalname,
-      chemin_fichier: req.file.url,
-      url_cloudinary: req.file.url,
-      public_id_cloudinary: req.file.public_id,
+      chemin_fichier: fileUrl,
+      url_cloudinary: fileUrl,
+      public_id_cloudinary: publicId,
       taille_fichier: req.file.size,
       type_mime: req.file.mimetype,
       description: req.body.description || null,
