@@ -371,6 +371,26 @@ router.get('/contrat/:contrat_id', requireRole(['Superviseur RH', 'Administrateu
   }
 });
 
+// GET /api/documents-rh/debug - Route de debug pour voir les noms de fichiers
+router.get('/debug', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
+  try {
+    const documents = await DocumentRH.findAll({
+      attributes: ['id', 'nom_fichier', 'nom_fichier_original', 'public_id_cloudinary', 'url_cloudinary', 'type_mime'],
+      order: [['date_creation', 'DESC']],
+      limit: 5
+    });
+
+    res.json({
+      success: true,
+      data: documents,
+      message: 'Debug des noms de fichiers'
+    });
+  } catch (error) {
+    console.error('Erreur lors du debug des documents:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
 // GET /api/documents-rh/:id/download - Télécharger un document
 router.get('/:id/download', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
   try {
