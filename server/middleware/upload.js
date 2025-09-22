@@ -1,39 +1,26 @@
 const multer = require('multer');
-const CloudinaryStorage = require('multer-storage-cloudinary');
-const cloudinary = require('../config/cloudinary');
+const path = require('path');
+const fs = require('fs');
 
-// Configuration du stockage Cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'beatrice_rh_documents',
-    resource_type: 'raw',
-    public_id: (req, file) => {
-      // Générer un public_id avec extension
-      const timestamp = Date.now();
-      const random = Math.round(Math.random() * 1000000);
-      const originalName = file.originalname || 'document';
-      
-      // Nettoyer et extraire l'extension de manière robuste
-      const parts = originalName.split('.');
-      let ext = 'file'; // extension par défaut
-      
-      if (parts.length > 1) {
-        ext = parts[parts.length - 1]
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9]/g, ''); // Supprimer tous les caractères non alphanumériques
-        if (!ext) ext = 'file';
-      }
-      
-      const publicId = `rh_${timestamp}_${random}.${ext}`;
-      console.log('Generated public_id:', publicId);
-      return publicId;
-    }
+// Configuration du stockage temporaire (comme pour les problématiques)
+const uploadDir = path.join(__dirname, '../../uploads/temp');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const random = Math.round(Math.random() * 1000000);
+    const ext = path.extname(file.originalname);
+    cb(null, `rh_doc_${timestamp}_${random}${ext}`);
   }
 });
 
-console.log('✅ Cloudinary configuré pour l\'upload de fichiers');
+console.log('✅ Stockage temporaire configuré pour l\'upload de fichiers');
 
 // Configuration multer
 const upload = multer({
@@ -48,11 +35,33 @@ const upload = multer({
     console.log('File mimetype:', file.mimetype);
     console.log('==========================');
     
-    const allowedTypes = /jpeg|jpg|png|pdf|doc|docx|xls|xlsx/;
-    const extname = allowedTypes.test(file.originalname.toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    // Vérifier le mimetype d'abord
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    
+    // Vérifier l'extension du fichier
+    const allowedExtensions = /\.(jpeg|jpg|png|pdf|doc|docx|xls|xlsx)$/i;
+    const hasValidExtension = allowedExtensions.test(file.originalname);
+    
+    // Vérifier le mimetype
+    const hasValidMimeType = allowedMimeTypes.includes(file.mimetype);
+    
+    console.log('Validation:', {
+      hasValidExtension,
+      hasValidMimeType,
+      originalname: file.originalname,
+      mimetype: file.mimetype
+    });
 
-    if (mimetype && extname) {
+    if (hasValidMimeType || hasValidExtension) {
       console.log('✅ Fichier autorisé');
       return cb(null, true);
     } else {

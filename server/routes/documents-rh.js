@@ -3,7 +3,7 @@ const router = express.Router();
 const { DocumentRH, Contrat, User } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
-const cloudinary = require('../config/cloudinary');
+const CloudinaryDocumentService = require('../services/cloudinaryDocumentService');
 const { body, validationResult } = require('express-validator');
 
 // Apply authentication to all routes
@@ -156,37 +156,24 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
       }
     }
 
-    // Vérifier que le fichier a été uploadé sur Cloudinary
-    if (!req.file.url || !req.file.public_id) {
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Erreur lors de l\'upload sur Cloudinary. URL ou public_id manquant.' 
-      });
-    }
-    
-    console.log('Fichier uploadé sur Cloudinary:', {
-      filename: req.file.filename,
-      originalname: req.file.originalname,
-      url: req.file.url,
-      public_id: req.file.public_id,
-      size: req.file.size,
-      mimetype: req.file.mimetype
-    });
+    // Utiliser le service Cloudinary pour traiter le document
+    console.log('🔄 Traitement du document avec CloudinaryDocumentService...');
+    const documentService = new CloudinaryDocumentService();
+    const documentData = await documentService.processAndSaveDocument(req.file, req.body.type_document);
 
-    // Utiliser le public_id de Cloudinary qui contient maintenant l'extension
-    const nomFichier = req.file.public_id.split('/').pop(); // Extrait le nom avec extension du public_id
+    console.log('✅ Document traité avec succès:', documentData);
 
     const document = await DocumentRH.create({
       employe_id: req.body.employe_id,
       contrat_id: req.body.contrat_id || null,
       type_document: req.body.type_document,
-      nom_fichier: nomFichier,
-      nom_fichier_original: req.file.originalname,
-      chemin_fichier: req.file.url,
-      url_cloudinary: req.file.url,
-      public_id_cloudinary: req.file.public_id,
-      taille_fichier: req.file.size || 0,
-      type_mime: req.file.mimetype,
+      nom_fichier: documentData.nom_fichier,
+      nom_fichier_original: documentData.nom_fichier_original,
+      chemin_fichier: documentData.chemin_fichier,
+      url_cloudinary: documentData.url_cloudinary,
+      public_id_cloudinary: documentData.public_id_cloudinary,
+      taille_fichier: documentData.taille_fichier,
+      type_mime: documentData.type_mime,
       description: req.body.description || null,
       date_emission: req.body.date_emission || null,
       date_expiration: req.body.date_expiration || null,
