@@ -76,7 +76,9 @@ class CloudinaryDocumentService {
         folder: folder,
         resource_type: 'raw', // Pour les documents (PDF, DOC, etc.)
         use_filename: false,
-        unique_filename: true
+        unique_filename: true,
+        access_mode: 'public', // Forcer l'accès public
+        type: 'upload' // Type d'upload standard
       });
 
       console.log('✅ Document uploadé vers Cloudinary:', result.public_id);
@@ -105,7 +107,8 @@ class CloudinaryDocumentService {
       console.log('🗑️ Suppression du document Cloudinary:', publicId);
       
       const result = await cloudinary.uploader.destroy(publicId, {
-        resource_type: 'raw'
+        resource_type: 'raw',
+        type: 'upload'
       });
       
       console.log('✅ Document supprimé de Cloudinary');
