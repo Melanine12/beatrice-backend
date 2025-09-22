@@ -1,33 +1,40 @@
 const multer = require('multer');
-const cloudinary = require('../config/cloudinary');
-const CloudinaryStorage = require('multer-storage-cloudinary');
+const path = require('path');
+const fs = require('fs');
 
-// Configuration du stockage Cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'rh-documents',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'],
-    transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
+// Créer le dossier uploads s'il n'existe pas
+const uploadDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configuration du stockage local temporaire pour tester
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Générer un nom de fichier unique
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'rh-doc-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
 // Configuration multer
 const upload = multer({
   storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max
+  limits: { 
+    fileSize: 10 * 1024 * 1024 // 10 MB file size limit
   },
   fileFilter: (req, file, cb) => {
-    // Vérifier le type de fichier
-    const allowedTypes = /jpeg|jpg|png|pdf|doc|docx|xls|xlsx/;
-    const extname = allowedTypes.test(file.originalname.toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (mimetype && extname) {
-      return cb(null, true);
+    if (file.mimetype === 'application/pdf' ||
+        file.mimetype === 'application/msword' ||
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.mimetype === 'image/jpeg' ||
+        file.mimetype === 'image/png') {
+      cb(null, true);
     } else {
-      cb(new Error('Type de fichier non autorisé. Formats acceptés: jpg, jpeg, png, pdf, doc, docx, xls, xlsx'));
+      cb(new Error('Type de fichier non supporté. Seuls les PDF, Word et images sont autorisés.'), false);
     }
   }
 });

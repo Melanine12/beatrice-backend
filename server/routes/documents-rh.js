@@ -143,21 +143,16 @@ router.post('/', requireRole(['Superviseur RH', 'Superviseur', 'Administrateur',
       employe_id: req.body.employe_id,
       contrat_id: req.body.contrat_id || null,
       type_document: req.body.type_document,
-      nom_fichier: req.file.filename,
-      nom_fichier_original: req.file.originalname,
-      chemin_fichier: req.file.path,
-      url_cloudinary: req.file.url,
-      public_id_cloudinary: req.file.public_id,
+      nom_document: req.file.originalname,
+      url_document: req.file.url,
+      public_id: req.file.public_id,
       taille_fichier: req.file.size,
       type_mime: req.file.mimetype,
       description: req.body.description || null,
       date_emission: req.body.date_emission || null,
       date_expiration: req.body.date_expiration || null,
-      statut: 'Actif',
       confidentialite: req.body.confidentialite || 'Interne',
-      cree_par: req.user.id,
-      date_creation: new Date(),
-      date_modification: new Date()
+      cree_par: req.user.id
     });
 
     // Récupérer le document avec les relations
