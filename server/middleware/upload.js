@@ -7,12 +7,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'beatrice_rh_documents',
-    resource_type: 'auto',
-    public_id: (req, file) => {
-      const timestamp = Date.now();
-      const random = Math.round(Math.random() * 1000000);
-      return `rh_${timestamp}_${random}`;
-    }
+    resource_type: 'auto'
   }
 });
 
