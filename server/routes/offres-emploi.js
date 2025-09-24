@@ -3,6 +3,7 @@ const router = express.Router();
 const { OffreEmploi, CandidatureOffre, User, Departement } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
+const offreNotificationService = require('../services/offreNotificationService');
 
 // Apply authentication to all routes
 router.use(authenticateToken);
@@ -156,6 +157,19 @@ router.post('/', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), va
       ]
     });
 
+    // Créer une notification pour la création de l'offre
+    try {
+      await offreNotificationService.createOffreNotification(
+        'offre_created',
+        offreAvecRelations,
+        req.user,
+        { additionalInfo: `Type: ${req.body.type_contrat}` }
+      );
+    } catch (notificationError) {
+      console.error('Erreur lors de la création de la notification:', notificationError);
+      // Ne pas faire échouer la création de l'offre si la notification échoue
+    }
+
     res.status(201).json({ success: true, data: offreAvecRelations });
   } catch (error) {
     console.error('Erreur lors de la création de l\'offre:', error);
@@ -186,7 +200,10 @@ router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), 
 
     // Mettre à jour la date de publication si le statut change vers "Ouverte"
     const updateData = { ...req.body };
-    if (req.body.statut === 'Ouverte' && offre.statut !== 'Ouverte') {
+    const ancienStatut = offre.statut;
+    const nouveauStatut = req.body.statut;
+    
+    if (nouveauStatut === 'Ouverte' && ancienStatut !== 'Ouverte') {
       updateData.date_publication = new Date();
     }
 
@@ -208,6 +225,30 @@ router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), 
       ]
     });
 
+    // Créer une notification pour la mise à jour de l'offre
+    try {
+      let notificationType = 'offre_updated';
+      let additionalInfo = `Statut: ${ancienStatut} → ${nouveauStatut}`;
+      
+      if (nouveauStatut === 'Ouverte' && ancienStatut !== 'Ouverte') {
+        notificationType = 'offre_published';
+        additionalInfo = 'L\'offre est maintenant ouverte aux candidatures';
+      } else if (nouveauStatut === 'Fermée' && ancienStatut !== 'Fermée') {
+        notificationType = 'offre_closed';
+        additionalInfo = 'L\'offre a été fermée';
+      }
+
+      await offreNotificationService.createOffreNotification(
+        notificationType,
+        offreMiseAJour,
+        req.user,
+        { additionalInfo }
+      );
+    } catch (notificationError) {
+      console.error('Erreur lors de la création de la notification:', notificationError);
+      // Ne pas faire échouer la mise à jour de l'offre si la notification échoue
+    }
+
     res.json({ success: true, data: offreMiseAJour });
   } catch (error) {
     console.error('Erreur lors de la mise à jour de l\'offre:', error);
@@ -218,9 +259,36 @@ router.put('/:id', requireRole(['Superviseur RH', 'Administrateur', 'Patron']), 
 // DELETE /api/offres-emploi/:id - Supprimer une offre
 router.delete('/:id', requireRole(['Administrateur', 'Patron']), async (req, res) => {
   try {
-    const offre = await OffreEmploi.findByPk(req.params.id);
+    const offre = await OffreEmploi.findByPk(req.params.id, {
+      include: [
+        {
+          model: Departement,
+          as: 'departement',
+          attributes: ['id', 'nom']
+        },
+        {
+          model: User,
+          as: 'createur',
+          attributes: ['id', 'prenom', 'nom']
+        }
+      ]
+    });
+    
     if (!offre) {
       return res.status(404).json({ success: false, message: 'Offre non trouvée' });
+    }
+
+    // Créer une notification pour la suppression de l'offre
+    try {
+      await offreNotificationService.createOffreNotification(
+        'offre_deleted',
+        offre,
+        req.user,
+        { additionalInfo: `Supprimée définitivement` }
+      );
+    } catch (notificationError) {
+      console.error('Erreur lors de la création de la notification:', notificationError);
+      // Ne pas faire échouer la suppression de l'offre si la notification échoue
     }
 
     await offre.destroy();
@@ -271,6 +339,20 @@ router.post('/:id/candidature', async (req, res) => {
     // Incrémenter le compteur de candidatures
     await offre.increment('candidatures');
 
+    // Créer une notification pour la nouvelle candidature
+    try {
+      await offreNotificationService.createCandidatureNotification(
+        'candidature_received',
+        candidature,
+        offre,
+        { prenom: candidature.candidat_prenom, nom: candidature.candidat_nom }, // Utilisateur fictif pour les candidatures externes
+        { additionalInfo: `Email: ${candidature.candidat_email}` }
+      );
+    } catch (notificationError) {
+      console.error('Erreur lors de la création de la notification candidature:', notificationError);
+      // Ne pas faire échouer la candidature si la notification échoue
+    }
+
     res.status(201).json({ success: true, data: candidature });
   } catch (error) {
     console.error('Erreur lors de la candidature:', error);
@@ -309,6 +391,30 @@ router.put('/candidatures/:id', requireRole(['Superviseur RH', 'Administrateur',
       traite_par: req.user.id,
       date_traitement: new Date()
     });
+
+    // Récupérer l'offre pour la notification
+    const offre = await OffreEmploi.findByPk(candidature.offre_id);
+
+    // Créer une notification pour la mise à jour de la candidature
+    try {
+      let notificationType = 'candidature_updated';
+      if (statut === 'Acceptée') {
+        notificationType = 'candidature_accepted';
+      } else if (statut === 'Refusée') {
+        notificationType = 'candidature_rejected';
+      }
+
+      await offreNotificationService.createCandidatureNotification(
+        notificationType,
+        candidature,
+        offre,
+        req.user,
+        { additionalInfo: `Statut: ${statut}` }
+      );
+    } catch (notificationError) {
+      console.error('Erreur lors de la création de la notification candidature:', notificationError);
+      // Ne pas faire échouer la mise à jour si la notification échoue
+    }
 
     res.json({ success: true, data: candidature });
   } catch (error) {

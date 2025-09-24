@@ -41,6 +41,7 @@ const bonsMenageRoutes = require('./routes/bons-menage');
 const contratsRoutes = require('./routes/contrats');
 const documentsRHRoutes = require('./routes/documents-rh');
 const offresEmploiRoutes = require('./routes/offres-emploi');
+const offreNotificationService = require('./services/offreNotificationService');
 
 const app = express();
 // Socket.io for realtime notifications
@@ -54,6 +55,10 @@ const io = new Server(http, {
   }
 });
 app.set('io', io);
+
+// Initialiser le service de notifications avec Socket.io
+offreNotificationService.setSocketIO(io);
+
 const PORT = process.env.PORT || 5002;
 
 // Security middleware
