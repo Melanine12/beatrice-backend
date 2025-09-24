@@ -33,6 +33,8 @@ const BonMenage = require('./BonMenage');
 const { sequelize } = require('../config/database');
 const Contrat = require('./Contrat')(sequelize);
 const DocumentRH = require('./DocumentRH')(sequelize);
+const OffreEmploi = require('./OffreEmploi');
+const CandidatureOffre = require('./CandidatureOffre');
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -469,6 +471,20 @@ DocumentRH.belongsTo(Contrat, { foreignKey: 'contrat_id', as: 'contrat' });
 User.hasMany(DocumentRH, { foreignKey: 'cree_par', as: 'DocumentsRHCrees' });
 DocumentRH.belongsTo(User, { foreignKey: 'cree_par', as: 'createur' });
 
+// Associations pour les offres d'emploi
+User.hasMany(OffreEmploi, { foreignKey: 'cree_par', as: 'OffresEmploiCrees' });
+OffreEmploi.belongsTo(User, { foreignKey: 'cree_par', as: 'createur' });
+
+Departement.hasMany(OffreEmploi, { foreignKey: 'departement_id', as: 'OffresEmploi' });
+OffreEmploi.belongsTo(Departement, { foreignKey: 'departement_id', as: 'departement' });
+
+// Associations pour les candidatures
+OffreEmploi.hasMany(CandidatureOffre, { foreignKey: 'offre_id', as: 'Candidatures' });
+CandidatureOffre.belongsTo(OffreEmploi, { foreignKey: 'offre_id', as: 'offre' });
+
+User.hasMany(CandidatureOffre, { foreignKey: 'traite_par', as: 'CandidaturesTraitees' });
+CandidatureOffre.belongsTo(User, { foreignKey: 'traite_par', as: 'traiteur' });
+
 module.exports = {
   User,
   Chambre,
@@ -503,5 +519,7 @@ module.exports = {
   RappelPaiement,
   BonMenage,
   Contrat,
-  DocumentRH
+  DocumentRH,
+  OffreEmploi,
+  CandidatureOffre
 }; 

@@ -40,6 +40,7 @@ const organigrammeRoutes = require('./routes/organigramme');
 const bonsMenageRoutes = require('./routes/bons-menage');
 const contratsRoutes = require('./routes/contrats');
 const documentsRHRoutes = require('./routes/documents-rh');
+const offresEmploiRoutes = require('./routes/offres-emploi');
 
 const app = express();
 // Socket.io for realtime notifications
@@ -215,6 +216,7 @@ app.use('/api/organigramme', organigrammeRoutes);
 app.use('/api/bons-menage', bonsMenageRoutes);
 app.use('/api/contrats', contratsRoutes);
 app.use('/api/documents-rh', documentsRHRoutes);
+app.use('/api/offres-emploi', offresEmploiRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
