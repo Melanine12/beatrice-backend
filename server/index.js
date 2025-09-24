@@ -41,6 +41,7 @@ const bonsMenageRoutes = require('./routes/bons-menage');
 const contratsRoutes = require('./routes/contrats');
 const documentsRHRoutes = require('./routes/documents-rh');
 const offresEmploiRoutes = require('./routes/offres-emploi');
+const offresEmploiPublicRoutes = require('./routes/offres-emploi-public');
 const offreNotificationService = require('./services/offreNotificationService');
 
 const app = express();
@@ -222,6 +223,7 @@ app.use('/api/bons-menage', bonsMenageRoutes);
 app.use('/api/contrats', contratsRoutes);
 app.use('/api/documents-rh', documentsRHRoutes);
 app.use('/api/offres-emploi', offresEmploiRoutes);
+app.use('/api/offres-emploi/public', offresEmploiPublicRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
