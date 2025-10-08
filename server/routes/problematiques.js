@@ -355,7 +355,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/problematiques - Create new issue with file upload
+// POST /api/problematiques - Create new issue with file upload (unified for React and Flutter)
 router.post('/', [
   upload.array('fichiers', 5), // Max 5 files
   body('titre').isLength({ min: 3, max: 255 }),
@@ -550,11 +550,15 @@ router.post('/', [
     // Créer la problématique d'abord
     const problematique = await Problematique.create(problematiqueData);
 
-    // Traiter les images uploadées
+    // Traiter les images uploadées ou les URLs Cloudinary
     console.log('🔍 DEBUG: req.files =', req.files);
     console.log('🔍 DEBUG: typeof req.files =', typeof req.files);
     console.log('🔍 DEBUG: Array.isArray(req.files) =', Array.isArray(req.files));
+    console.log('🔍 DEBUG: pieces_jointes =', req.body.pieces_jointes);
     
+    const uploadedImages = [];
+    
+    // Cas 1: Fichiers uploadés (React)
     if (req.files && req.files.length > 0) {
       console.log('🖼️ Début du traitement des images uploadées');
       console.log('📁 Nombre de fichiers reçus:', req.files.length);
@@ -564,8 +568,6 @@ router.post('/', [
         size: f.size,
         buffer: f.buffer ? 'Présent' : 'Manquant'
       })));
-
-      const uploadedImages = [];
 
       for (const file of req.files) {
         try {
@@ -608,11 +610,70 @@ router.post('/', [
       // Ajouter les images à la réponse
       problematique.dataValues.images = uploadedImages;
     }
+    
+    // Cas 2: URLs Cloudinary (Flutter)
+    else if (req.body.pieces_jointes && Array.isArray(req.body.pieces_jointes) && req.body.pieces_jointes.length > 0) {
+      console.log('☁️ Début du traitement des URLs Cloudinary');
+      console.log('📁 Nombre d\'URLs reçues:', req.body.pieces_jointes.length);
+      console.log('📋 Détails des URLs:', req.body.pieces_jointes);
+
+      for (const pieceJointe of req.body.pieces_jointes) {
+        try {
+          console.log(`🔄 Traitement de l'URL: ${pieceJointe.url}`);
+          
+          // Extraire le nom de fichier de l'URL
+          const urlParts = pieceJointe.url.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          const nameWithoutExt = filename.split('.')[0];
+          
+          // Créer les données de l'image pour la base
+          const imageData = {
+            problematique_id: problematique.id,
+            nom_fichier: filename,
+            nom_original: pieceJointe.nom || filename,
+            chemin_fichier: pieceJointe.url,
+            type_mime: pieceJointe.type || 'image/jpeg',
+            taille: 0, // Taille inconnue pour les URLs
+            source: 'upload',
+            utilisateur_id: req.user.id,
+            statut: 'actif',
+            public_id: nameWithoutExt,
+            cloudinary_data: {
+              public_id: nameWithoutExt,
+              secure_url: pieceJointe.url,
+              url: pieceJointe.url
+            }
+          };
+
+          console.log('✅ Données de l\'image préparées:', imageData);
+
+          // Sauvegarder en base de données
+          const image = await ProblematiqueImage.create(imageData);
+          console.log('✅ Image sauvegardée en base, ID:', image.id);
+          uploadedImages.push(image);
+
+        } catch (error) {
+          console.error(`❌ Erreur lors du traitement de l'URL ${pieceJointe.url}:`, error);
+          console.error('📚 Stack trace:', error.stack);
+          // Continuer avec les autres URLs
+        }
+      }
+
+      // Mettre à jour le nombre d'images
+      await problematique.update({
+        nombre_images: uploadedImages.length,
+        image_principale: uploadedImages.length > 0 ? uploadedImages[0].chemin_fichier : null
+      });
+
+      // Ajouter les images à la réponse
+      problematique.dataValues.images = uploadedImages;
+    }
 
     res.status(201).json({
       message: 'Problématique créée avec succès',
       problematique,
-      imagesUploaded: req.files ? req.files.length : 0
+      imagesUploaded: uploadedImages.length,
+      imagesSource: req.files && req.files.length > 0 ? 'files' : 'urls'
     });
 
   } catch (error) {

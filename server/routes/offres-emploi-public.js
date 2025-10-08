@@ -3,6 +3,17 @@ const router = express.Router();
 const { OffreEmploi, CandidatureOffre, User, Departement } = require('../models');
 const { body, validationResult } = require('express-validator');
 
+// Note: Ces routes sont publiques et n'exigent pas d'authentification
+
+// Test endpoint
+router.get('/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Routes publiques fonctionnent',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // GET /api/offres-emploi/public - Liste publique des offres d'emploi
 router.get('/', async (req, res) => {
   try {

@@ -125,6 +125,86 @@ class CloudinaryService {
 
     return originalUrl;
   }
+
+  // Upload d'une image générique vers Cloudinary
+  static async uploadImage(imageBuffer, folder, options = {}) {
+    try {
+      console.log('☁️ Upload vers Cloudinary - Buffer size:', imageBuffer.length);
+      console.log('📁 Dossier:', folder);
+      console.log('⚙️ Options:', options);
+
+      const uploadOptions = {
+        folder: folder,
+        resource_type: 'image',
+        quality: 'auto',
+        format: 'auto',
+        ...options
+      };
+
+      const result = await cloudinary.uploader.upload(
+        `data:image/jpeg;base64,${imageBuffer.toString('base64')}`,
+        uploadOptions
+      );
+
+      console.log('✅ Upload Cloudinary réussi:', result.public_id);
+
+      return {
+        success: true,
+        public_id: result.public_id,
+        secure_url: result.secure_url,
+        url: result.url,
+        created_at: result.created_at,
+        width: result.width,
+        height: result.height,
+        format: result.format,
+        bytes: result.bytes
+      };
+    } catch (error) {
+      console.error('❌ Erreur upload Cloudinary:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Upload d'un buffer d'image directement
+  static async uploadImageBuffer(imageBuffer, folder, options = {}) {
+    try {
+      console.log('☁️ Upload buffer vers Cloudinary - Taille:', imageBuffer.length);
+      
+      const uploadOptions = {
+        folder: folder,
+        resource_type: 'image',
+        quality: 'auto',
+        format: 'auto',
+        ...options
+      };
+
+      const result = await cloudinary.uploader.upload(
+        `data:image/jpeg;base64,${imageBuffer.toString('base64')}`,
+        uploadOptions
+      );
+
+      return {
+        success: true,
+        public_id: result.public_id,
+        secure_url: result.secure_url,
+        url: result.url,
+        created_at: result.created_at,
+        width: result.width,
+        height: result.height,
+        format: result.format,
+        bytes: result.bytes
+      };
+    } catch (error) {
+      console.error('❌ Erreur upload buffer Cloudinary:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
 }
 
 module.exports = {

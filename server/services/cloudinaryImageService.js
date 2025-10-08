@@ -104,7 +104,7 @@ class CloudinaryImageService {
       // Upload vers Cloudinary
       console.log('☁️ Upload vers Cloudinary...');
       const folder = `problematiques/${problematiqueId}`;
-      const uploadResult = await CloudinaryService.uploadImage(processedBuffer, folder, {
+      const uploadResult = await CloudinaryService.uploadImageBuffer(processedBuffer, folder, {
         public_id: filename.replace(/\.[^/.]+$/, ''), // Sans extension
         overwrite: false
       });
@@ -217,7 +217,7 @@ class CloudinaryImageService {
           .toBuffer();
 
         // Upload le thumbnail vers Cloudinary
-        const thumbnailResult = await CloudinaryService.uploadImage(thumbnailBuffer, folder, {
+        const thumbnailResult = await CloudinaryService.uploadImageBuffer(thumbnailBuffer, folder, {
           public_id: thumbnailFilename,
           overwrite: false
         });
@@ -271,7 +271,7 @@ class CloudinaryImageService {
       
       // Uploader la nouvelle image
       const folder = publicId.split('/').slice(0, -1).join('/');
-      const uploadResult = await CloudinaryService.uploadImage(processedBuffer, folder, {
+      const uploadResult = await CloudinaryService.uploadImageBuffer(processedBuffer, folder, {
         public_id: publicId.split('/').pop(),
         overwrite: true,
         ...options
