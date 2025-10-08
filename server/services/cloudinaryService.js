@@ -45,8 +45,7 @@ class CloudinaryService {
         public_id: `employee_${employeeId}_${Date.now()}`,
         transformation: [
           { width: 400, height: 400, crop: 'fill', gravity: 'face' },
-          { quality: 'auto' },
-          { format: 'auto' }
+          { quality: 'auto' }
         ],
         resource_type: 'image'
       });
@@ -117,8 +116,7 @@ class CloudinaryService {
           height,
           crop,
           gravity,
-          quality,
-          format: 'auto'
+          quality
         });
       }
     }
@@ -137,7 +135,6 @@ class CloudinaryService {
         folder: folder,
         resource_type: 'image',
         quality: 'auto',
-        format: 'auto',
         ...options
       };
 
@@ -177,7 +174,6 @@ class CloudinaryService {
         folder: folder,
         resource_type: 'image',
         quality: 'auto',
-        format: 'auto',
         ...options
       };
 
