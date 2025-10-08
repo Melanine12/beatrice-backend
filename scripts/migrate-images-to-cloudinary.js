@@ -10,7 +10,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const { sequelize } = require('../server/config/database');
 const ProblematiqueImage = require('../server/models/ProblematiqueImage');
-const CloudinaryService = require('../server/services/cloudinaryService');
+const { CloudinaryService } = require('../server/services/cloudinaryService');
 
 class ImageMigrationService {
   constructor() {

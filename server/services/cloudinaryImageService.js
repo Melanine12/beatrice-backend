@@ -1,4 +1,4 @@
-const CloudinaryService = require('./cloudinaryService');
+const { CloudinaryService } = require('./cloudinaryService');
 const sharp = require('sharp');
 const { v4: uuidv4 } = require('uuid');
 
