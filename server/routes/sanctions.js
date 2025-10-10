@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
+const { Op } = require('sequelize');
 const Sanction = require('../models/Sanction');
 const { authenticateToken } = require('../middleware/auth');
 

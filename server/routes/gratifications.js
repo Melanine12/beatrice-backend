@@ -40,12 +40,12 @@ router.get('/', authenticateToken, async (req, res) => {
         {
           model: Employe,
           as: 'employe',
-          attributes: ['id', 'nom', 'prenom', 'email']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel']
         },
         {
           model: Employe,
           as: 'gratificationPar',
-          attributes: ['id', 'nom', 'prenom']
+          attributes: ['id', 'nom_famille', 'prenoms']
         }
       ],
       order: [['date_gratification', 'DESC']],
@@ -88,12 +88,12 @@ router.get('/employe/:employe_id', authenticateToken, async (req, res) => {
         {
           model: Employe,
           as: 'employe',
-          attributes: ['id', 'nom', 'prenom', 'email']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel']
         },
         {
           model: Employe,
           as: 'gratificationPar',
-          attributes: ['id', 'nom', 'prenom']
+          attributes: ['id', 'nom_famille', 'prenoms']
         }
       ],
       order: [['date_gratification', 'DESC']]
@@ -169,12 +169,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
         {
           model: Employe,
           as: 'employe',
-          attributes: ['id', 'nom', 'prenom', 'email']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel']
         },
         {
           model: Employe,
           as: 'gratificationPar',
-          attributes: ['id', 'nom', 'prenom']
+          attributes: ['id', 'nom_famille', 'prenoms']
         }
       ]
     });
@@ -262,12 +262,12 @@ router.post('/', authenticateToken, gratificationValidation, async (req, res) =>
         {
           model: Employe,
           as: 'employe',
-          attributes: ['id', 'nom', 'prenom', 'email']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel']
         },
         {
           model: Employe,
           as: 'gratificationPar',
-          attributes: ['id', 'nom', 'prenom']
+          attributes: ['id', 'nom_famille', 'prenoms']
         }
       ]
     });
@@ -360,12 +360,12 @@ router.put('/:id', authenticateToken, gratificationValidation, async (req, res) 
         {
           model: Employe,
           as: 'employe',
-          attributes: ['id', 'nom', 'prenom', 'email']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel']
         },
         {
           model: Employe,
           as: 'gratificationPar',
-          attributes: ['id', 'nom', 'prenom']
+          attributes: ['id', 'nom_famille', 'prenoms']
         }
       ]
     });
