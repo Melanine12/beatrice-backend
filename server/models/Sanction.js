@@ -41,7 +41,7 @@ const Sanction = sequelize.define('Sanction', {
     allowNull: false,
     validate: {
       isDate: true,
-      isBefore: new Date().toISOString().split('T')[0] // Ne peut pas être dans le futur
+      isBefore: () => new Date().toISOString().split('T')[0] // Ne peut pas être dans le futur
     },
     comment: 'Date d\'application de la sanction'
   },
