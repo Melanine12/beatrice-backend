@@ -13,7 +13,7 @@ const Gratification = sequelize.define('Gratification', {
     allowNull: false,
     comment: 'ID de l\'employé concerné',
     references: {
-      model: 'tbl_utilisateurs',
+      model: 'tbl_employes',
       key: 'id'
     }
   },
@@ -60,7 +60,7 @@ const Gratification = sequelize.define('Gratification', {
     allowNull: true,
     comment: 'ID de l\'employé qui a accordé la gratification',
     references: {
-      model: 'tbl_utilisateurs',
+      model: 'tbl_employes',
       key: 'id'
     }
   }

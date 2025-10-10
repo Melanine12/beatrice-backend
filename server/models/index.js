@@ -38,6 +38,7 @@ const CandidatureOffre = require('./CandidatureOffre');
 const Dependant = require('./Dependant');
 const Sanction = require('./Sanction');
 const Gratification = require('./Gratification');
+const Employe = require('./Employe');
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -534,5 +535,6 @@ module.exports = {
   CandidatureOffre,
   Dependant,
   Sanction,
-  Gratification
+  Gratification,
+  Employe
 }; 
