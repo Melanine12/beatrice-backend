@@ -490,11 +490,11 @@ User.hasMany(CandidatureOffre, { foreignKey: 'traite_par', as: 'CandidaturesTrai
 CandidatureOffre.belongsTo(User, { foreignKey: 'traite_par', as: 'traiteur' });
 
 // Associations pour les gratifications
-User.hasMany(Gratification, { foreignKey: 'employe_id', as: 'Gratifications' });
-Gratification.belongsTo(User, { foreignKey: 'employe_id', as: 'employe' });
+Employe.hasMany(Gratification, { foreignKey: 'employe_id', as: 'Gratifications' });
+Gratification.belongsTo(Employe, { foreignKey: 'employe_id', as: 'employe' });
 
-User.hasMany(Gratification, { foreignKey: 'gratification_par', as: 'GratificationsAccordees' });
-Gratification.belongsTo(User, { foreignKey: 'gratification_par', as: 'gratificationPar' });
+Employe.hasMany(Gratification, { foreignKey: 'gratification_par', as: 'GratificationsAccordees' });
+Gratification.belongsTo(Employe, { foreignKey: 'gratification_par', as: 'gratificationPar' });
 
 module.exports = {
   User,
