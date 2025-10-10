@@ -37,6 +37,7 @@ const OffreEmploi = require('./OffreEmploi');
 const CandidatureOffre = require('./CandidatureOffre');
 const Dependant = require('./Dependant');
 const Sanction = require('./Sanction');
+const Gratification = require('./Gratification');
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -487,9 +488,9 @@ CandidatureOffre.belongsTo(OffreEmploi, { foreignKey: 'offre_id', as: 'offre' })
 User.hasMany(CandidatureOffre, { foreignKey: 'traite_par', as: 'CandidaturesTraitees' });
 CandidatureOffre.belongsTo(User, { foreignKey: 'traite_par', as: 'traiteur' });
 
-// Associations pour les dépendants
+// Associations pour les gratifications
 // Note: Les associations avec tbl_employes seront gérées au niveau de la base de données
-// via les clés étrangères définies dans le modèle Dependant
+// via les clés étrangères définies dans le modèle Gratification
 
 module.exports = {
   User,
@@ -529,5 +530,6 @@ module.exports = {
   OffreEmploi,
   CandidatureOffre,
   Dependant,
-  Sanction
+  Sanction,
+  Gratification
 }; 
