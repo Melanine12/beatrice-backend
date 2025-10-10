@@ -16,10 +16,10 @@ const Sanction = sequelize.define('Sanction', {
     },
     comment: 'Référence vers l\'employé sanctionné'
   },
-  type_sanction: {
-    type: DataTypes.ENUM('Avertissement', 'Réprimande', 'Suspension', 'Mise à pied', 'Blâme', 'Autre'),
+  type: {
+    type: DataTypes.ENUM('avertissement', 'blame', 'mise_a_pied', 'licenciement'),
     allowNull: false,
-    defaultValue: 'Avertissement',
+    defaultValue: 'avertissement',
     comment: 'Type de sanction appliquée'
   },
   motif: {
@@ -45,19 +45,23 @@ const Sanction = sequelize.define('Sanction', {
     },
     comment: 'Date d\'application de la sanction'
   },
-  duree_suspension: {
-    type: DataTypes.INTEGER,
+  duree: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    comment: 'Durée de la sanction (ex: 3 jours, 1 semaine)'
+  },
+  montant_amende: {
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
     validate: {
-      min: 1,
-      max: 365
+      min: 0
     },
-    comment: 'Durée de suspension en jours'
+    comment: 'Montant de l\'amende en euros'
   },
   statut: {
-    type: DataTypes.ENUM('Actif', 'Annulé', 'Expiré'),
+    type: DataTypes.ENUM('actif', 'annule', 'suspendu'),
     allowNull: false,
-    defaultValue: 'Actif',
+    defaultValue: 'actif',
     comment: 'Statut de la sanction'
   },
   sanction_par: {
@@ -98,7 +102,7 @@ const Sanction = sequelize.define('Sanction', {
       fields: ['employe_id']
     },
     {
-      fields: ['type_sanction']
+      fields: ['type']
     },
     {
       fields: ['date_sanction']
@@ -112,12 +116,17 @@ const Sanction = sequelize.define('Sanction', {
   ],
   hooks: {
     beforeValidate: (sanction) => {
-      // Calculer automatiquement la date de fin de suspension
-      if (sanction.type_sanction === 'Suspension' && sanction.duree_suspension && sanction.date_sanction) {
-        const dateDebut = new Date(sanction.date_sanction);
-        const dateFin = new Date(dateDebut);
-        dateFin.setDate(dateFin.getDate() + sanction.duree_suspension);
-        sanction.date_fin_suspension = dateFin.toISOString().split('T')[0];
+      // Calculer automatiquement la date de fin de suspension pour les mises à pied
+      if (sanction.type === 'mise_a_pied' && sanction.duree && sanction.date_sanction) {
+        // Extraire le nombre de jours de la durée (ex: "3 jours" -> 3)
+        const joursMatch = sanction.duree.match(/(\d+)\s*jour/i);
+        if (joursMatch) {
+          const jours = parseInt(joursMatch[1]);
+          const dateDebut = new Date(sanction.date_sanction);
+          const dateFin = new Date(dateDebut);
+          dateFin.setDate(dateFin.getDate() + jours);
+          sanction.date_fin_suspension = dateFin.toISOString().split('T')[0];
+        }
       }
     }
   }

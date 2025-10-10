@@ -7,7 +7,7 @@ const { authenticateToken } = require('../middleware/auth');
 // GET /api/sanctions - Récupérer toutes les sanctions
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { employe_id, type_sanction, statut, date_debut, date_fin, search } = req.query;
+    const { employe_id, type, statut, date_debut, date_fin, search } = req.query;
     
     let whereClause = {};
     
@@ -15,8 +15,8 @@ router.get('/', authenticateToken, async (req, res) => {
       whereClause.employe_id = employe_id;
     }
     
-    if (type_sanction) {
-      whereClause.type_sanction = type_sanction;
+    if (type) {
+      whereClause.type = type;
     }
     
     if (statut) {
@@ -63,15 +63,13 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
     const totalSanctions = await Sanction.count();
-    const avertissements = await Sanction.count({ where: { type_sanction: 'Avertissement' } });
-    const reprimandes = await Sanction.count({ where: { type_sanction: 'Réprimande' } });
-    const suspensions = await Sanction.count({ where: { type_sanction: 'Suspension' } });
-    const misesAPied = await Sanction.count({ where: { type_sanction: 'Mise à pied' } });
-    const blames = await Sanction.count({ where: { type_sanction: 'Blâme' } });
-    const autres = await Sanction.count({ where: { type_sanction: 'Autre' } });
-    const actives = await Sanction.count({ where: { statut: 'Actif' } });
-    const annulees = await Sanction.count({ where: { statut: 'Annulé' } });
-    const expirees = await Sanction.count({ where: { statut: 'Expiré' } });
+    const avertissements = await Sanction.count({ where: { type: 'avertissement' } });
+    const blames = await Sanction.count({ where: { type: 'blame' } });
+    const misesAPied = await Sanction.count({ where: { type: 'mise_a_pied' } });
+    const licenciements = await Sanction.count({ where: { type: 'licenciement' } });
+    const actives = await Sanction.count({ where: { statut: 'actif' } });
+    const annulees = await Sanction.count({ where: { statut: 'annule' } });
+    const suspendues = await Sanction.count({ where: { statut: 'suspendu' } });
 
     res.json({
       success: true,
@@ -79,16 +77,14 @@ router.get('/stats', authenticateToken, async (req, res) => {
         total: totalSanctions,
         par_type: {
           avertissements,
-          reprimandes,
-          suspensions,
-          misesAPied,
           blames,
-          autres
+          misesAPied,
+          licenciements
         },
         par_statut: {
           actives,
           annulees,
-          expirees
+          suspendues
         }
       }
     });
@@ -154,12 +150,13 @@ router.get('/employe/:employe_id', authenticateToken, async (req, res) => {
 router.post('/', [
   authenticateToken,
   body('employe_id').isInt({ min: 1 }).withMessage('ID employé invalide'),
-  body('type_sanction').isIn(['Avertissement', 'Réprimande', 'Suspension', 'Mise à pied', 'Blâme', 'Autre']).withMessage('Type de sanction invalide'),
+  body('type').isIn(['avertissement', 'blame', 'mise_a_pied', 'licenciement']).withMessage('Type de sanction invalide'),
   body('motif').isLength({ min: 5, max: 1000 }).withMessage('Le motif doit contenir entre 5 et 1000 caractères'),
   body('description').optional().isLength({ max: 2000 }).withMessage('La description ne doit pas dépasser 2000 caractères'),
   body('date_sanction').isISO8601().withMessage('Format de date invalide'),
-  body('duree_suspension').optional().isInt({ min: 1, max: 365 }).withMessage('La durée de suspension doit être entre 1 et 365 jours'),
-  body('statut').optional().isIn(['Actif', 'Annulé', 'Expiré']).withMessage('Le statut doit être "Actif", "Annulé" ou "Expiré"'),
+  body('duree').optional().isLength({ max: 100 }).withMessage('La durée ne doit pas dépasser 100 caractères'),
+  body('montant_amende').optional().isFloat({ min: 0 }).withMessage('Le montant de l\'amende doit être positif'),
+  body('statut').optional().isIn(['actif', 'annule', 'suspendu']).withMessage('Le statut doit être "actif", "annule" ou "suspendu"'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -220,8 +217,9 @@ router.put('/:id', [
   body('motif').optional().isLength({ min: 5, max: 1000 }).withMessage('Le motif doit contenir entre 5 et 1000 caractères'),
   body('description').optional().isLength({ max: 2000 }).withMessage('La description ne doit pas dépasser 2000 caractères'),
   body('date_sanction').optional().isISO8601().withMessage('Format de date invalide'),
-  body('duree_suspension').optional().isInt({ min: 1, max: 365 }).withMessage('La durée de suspension doit être entre 1 et 365 jours'),
-  body('statut').optional().isIn(['Actif', 'Annulé', 'Expiré']).withMessage('Le statut doit être "Actif", "Annulé" ou "Expiré"'),
+  body('duree').optional().isLength({ max: 100 }).withMessage('La durée ne doit pas dépasser 100 caractères'),
+  body('montant_amende').optional().isFloat({ min: 0 }).withMessage('Le montant de l\'amende doit être positif'),
+  body('statut').optional().isIn(['actif', 'annule', 'suspendu']).withMessage('Le statut doit être "actif", "annule" ou "suspendu"'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -245,8 +243,8 @@ router.put('/:id', [
     // Mettre à jour seulement les champs fournis
     const updateData = {};
     const allowedFields = [
-      'type_sanction', 'motif', 'description', 'date_sanction',
-      'duree_suspension', 'statut'
+      'type', 'motif', 'description', 'date_sanction',
+      'duree', 'montant_amende', 'statut'
     ];
 
     allowedFields.forEach(field => {
@@ -304,7 +302,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // PATCH /api/sanctions/:id/statut - Changer le statut d'une sanction
 router.patch('/:id/statut', [
   authenticateToken,
-  body('statut').isIn(['Actif', 'Annulé', 'Expiré']).withMessage('Le statut doit être "Actif", "Annulé" ou "Expiré"')
+  body('statut').isIn(['actif', 'annule', 'suspendu']).withMessage('Le statut doit être "actif", "annule" ou "suspendu"')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
