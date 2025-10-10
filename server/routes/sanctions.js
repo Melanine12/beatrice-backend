@@ -160,7 +160,6 @@ router.post('/', [
   body('date_sanction').isISO8601().withMessage('Format de date invalide'),
   body('duree_suspension').optional().isInt({ min: 1, max: 365 }).withMessage('La durée de suspension doit être entre 1 et 365 jours'),
   body('statut').optional().isIn(['Actif', 'Annulé', 'Expiré']).withMessage('Le statut doit être "Actif", "Annulé" ou "Expiré"'),
-  body('pieces_justificatives').optional().isLength({ max: 1000 }).withMessage('Les pièces justificatives ne doivent pas dépasser 1000 caractères')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -223,7 +222,6 @@ router.put('/:id', [
   body('date_sanction').optional().isISO8601().withMessage('Format de date invalide'),
   body('duree_suspension').optional().isInt({ min: 1, max: 365 }).withMessage('La durée de suspension doit être entre 1 et 365 jours'),
   body('statut').optional().isIn(['Actif', 'Annulé', 'Expiré']).withMessage('Le statut doit être "Actif", "Annulé" ou "Expiré"'),
-  body('pieces_justificatives').optional().isLength({ max: 1000 }).withMessage('Les pièces justificatives ne doivent pas dépasser 1000 caractères')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -248,7 +246,7 @@ router.put('/:id', [
     const updateData = {};
     const allowedFields = [
       'type_sanction', 'motif', 'description', 'date_sanction',
-      'duree_suspension', 'statut', 'pieces_justificatives'
+      'duree_suspension', 'statut'
     ];
 
     allowedFields.forEach(field => {

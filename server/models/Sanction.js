@@ -77,11 +77,6 @@ const Sanction = sequelize.define('Sanction', {
     },
     comment: 'Date de fin de suspension'
   },
-  pieces_justificatives: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    comment: 'URLs des documents justificatifs'
-  },
   created_at: {
     type: DataTypes.DATE,
     allowNull: false,
