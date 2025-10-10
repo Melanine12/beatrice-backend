@@ -9,7 +9,12 @@ const router = express.Router();
 const gratificationValidation = [
   body('employe_id').isInt({ min: 1 }).withMessage('ID employé invalide'),
   body('type_gratification').isIn(['prime', 'bonus', 'commission', 'gratification_exceptionnelle', 'prime_performance', 'prime_anciennete']).withMessage('Type de gratification invalide'),
-  body('montant').isDecimal({ min: 0 }).withMessage('Montant invalide'),
+  body('montant').isNumeric().withMessage('Montant invalide').custom((value) => {
+    if (parseFloat(value) <= 0) {
+      throw new Error('Le montant doit être positif');
+    }
+    return true;
+  }),
   body('motif').isLength({ min: 1, max: 500 }).withMessage('Motif requis (max 500 caractères)'),
   body('description').optional().isLength({ max: 1000 }).withMessage('Description trop longue'),
   body('date_gratification').isISO8601().withMessage('Date de gratification invalide'),
