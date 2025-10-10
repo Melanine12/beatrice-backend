@@ -156,16 +156,21 @@ const Employe = sequelize.define('Employe', {
     allowNull: false,
     comment: 'Temps de travail'
   },
-  salaire_base: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: true,
-    comment: 'Salaire de base'
-  },
   statut: {
-    type: DataTypes.ENUM('actif', 'inactif', 'suspendu', 'licencie'),
+    type: DataTypes.STRING(50),
     allowNull: false,
-    defaultValue: 'actif',
+    defaultValue: 'Actif',
     comment: 'Statut de l\'employé'
+  },
+  niveau_classification: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    comment: 'Niveau de classification'
+  },
+  photo_url: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    comment: 'URL de la photo'
   },
   created_at: {
     type: DataTypes.DATE,
@@ -176,6 +181,16 @@ const Employe = sequelize.define('Employe', {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW
+  },
+  created_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'ID de l\'utilisateur qui a créé l\'employé'
+  },
+  updated_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'ID de l\'utilisateur qui a modifié l\'employé'
   }
 }, {
   tableName: 'tbl_employes',
