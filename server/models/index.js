@@ -489,8 +489,11 @@ User.hasMany(CandidatureOffre, { foreignKey: 'traite_par', as: 'CandidaturesTrai
 CandidatureOffre.belongsTo(User, { foreignKey: 'traite_par', as: 'traiteur' });
 
 // Associations pour les gratifications
-// Note: Les associations avec tbl_employes seront gérées au niveau de la base de données
-// via les clés étrangères définies dans le modèle Gratification
+User.hasMany(Gratification, { foreignKey: 'employe_id', as: 'Gratifications' });
+Gratification.belongsTo(User, { foreignKey: 'employe_id', as: 'employe' });
+
+User.hasMany(Gratification, { foreignKey: 'gratification_par', as: 'GratificationsAccordees' });
+Gratification.belongsTo(User, { foreignKey: 'gratification_par', as: 'gratificationPar' });
 
 module.exports = {
   User,

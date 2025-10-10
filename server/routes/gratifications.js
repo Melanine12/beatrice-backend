@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Gratification, Employe } = require('../models');
+const { Gratification, User } = require('../models');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -33,12 +33,12 @@ router.get('/', authenticateToken, async (req, res) => {
       where: whereClause,
       include: [
         {
-          model: Employe,
+          model: User,
           as: 'employe',
-          attributes: ['id', 'nom', 'prenom', 'matricule']
+          attributes: ['id', 'nom', 'prenom', 'email']
         },
         {
-          model: Employe,
+          model: User,
           as: 'gratificationPar',
           attributes: ['id', 'nom', 'prenom']
         }
@@ -81,12 +81,12 @@ router.get('/employe/:employe_id', authenticateToken, async (req, res) => {
       where: whereClause,
       include: [
         {
-          model: Employe,
+          model: User,
           as: 'employe',
-          attributes: ['id', 'nom', 'prenom', 'matricule']
+          attributes: ['id', 'nom', 'prenom', 'email']
         },
         {
-          model: Employe,
+          model: User,
           as: 'gratificationPar',
           attributes: ['id', 'nom', 'prenom']
         }
@@ -162,12 +162,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const gratification = await Gratification.findByPk(id, {
       include: [
         {
-          model: Employe,
+          model: User,
           as: 'employe',
-          attributes: ['id', 'nom', 'prenom', 'matricule']
+          attributes: ['id', 'nom', 'prenom', 'email']
         },
         {
-          model: Employe,
+          model: User,
           as: 'gratificationPar',
           attributes: ['id', 'nom', 'prenom']
         }
@@ -220,7 +220,7 @@ router.post('/', authenticateToken, gratificationValidation, async (req, res) =>
     } = req.body;
     
     // Vérifier que l'employé existe
-    const employe = await Employe.findByPk(employe_id);
+    const employe = await User.findByPk(employe_id);
     if (!employe) {
       return res.status(404).json({
         success: false,
@@ -230,7 +230,7 @@ router.post('/', authenticateToken, gratificationValidation, async (req, res) =>
     
     // Vérifier que gratification_par existe si fourni
     if (gratification_par) {
-      const gratificationPar = await Employe.findByPk(gratification_par);
+      const gratificationPar = await User.findByPk(gratification_par);
       if (!gratificationPar) {
         return res.status(404).json({
           success: false,
@@ -255,12 +255,12 @@ router.post('/', authenticateToken, gratificationValidation, async (req, res) =>
     const createdGratification = await Gratification.findByPk(gratification.id, {
       include: [
         {
-          model: Employe,
+          model: User,
           as: 'employe',
-          attributes: ['id', 'nom', 'prenom', 'matricule']
+          attributes: ['id', 'nom', 'prenom', 'email']
         },
         {
-          model: Employe,
+          model: User,
           as: 'gratificationPar',
           attributes: ['id', 'nom', 'prenom']
         }
@@ -317,7 +317,7 @@ router.put('/:id', authenticateToken, gratificationValidation, async (req, res) 
     
     // Vérifier que l'employé existe
     if (employe_id) {
-      const employe = await Employe.findByPk(employe_id);
+      const employe = await User.findByPk(employe_id);
       if (!employe) {
         return res.status(404).json({
           success: false,
@@ -328,7 +328,7 @@ router.put('/:id', authenticateToken, gratificationValidation, async (req, res) 
     
     // Vérifier que gratification_par existe si fourni
     if (gratification_par) {
-      const gratificationPar = await Employe.findByPk(gratification_par);
+      const gratificationPar = await User.findByPk(gratification_par);
       if (!gratificationPar) {
         return res.status(404).json({
           success: false,
@@ -353,12 +353,12 @@ router.put('/:id', authenticateToken, gratificationValidation, async (req, res) 
     const updatedGratification = await Gratification.findByPk(id, {
       include: [
         {
-          model: Employe,
+          model: User,
           as: 'employe',
-          attributes: ['id', 'nom', 'prenom', 'matricule']
+          attributes: ['id', 'nom', 'prenom', 'email']
         },
         {
-          model: Employe,
+          model: User,
           as: 'gratificationPar',
           attributes: ['id', 'nom', 'prenom']
         }
