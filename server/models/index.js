@@ -36,6 +36,7 @@ const DocumentRH = require('./DocumentRH')(sequelize);
 const OffreEmploi = require('./OffreEmploi');
 const CandidatureOffre = require('./CandidatureOffre');
 const Dependant = require('./Dependant');
+const Sanction = require('./Sanction');
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -527,5 +528,6 @@ module.exports = {
   DocumentRH,
   OffreEmploi,
   CandidatureOffre,
-  Dependant
+  Dependant,
+  Sanction
 }; 
