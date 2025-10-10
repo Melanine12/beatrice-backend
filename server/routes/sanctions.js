@@ -213,7 +213,7 @@ router.post('/', [
 // PUT /api/sanctions/:id - Mettre à jour une sanction
 router.put('/:id', [
   authenticateToken,
-  body('type_sanction').optional().isIn(['Avertissement', 'Réprimande', 'Suspension', 'Mise à pied', 'Blâme', 'Autre']).withMessage('Type de sanction invalide'),
+  body('type').optional().isIn(['avertissement', 'blame', 'mise_a_pied', 'licenciement']).withMessage('Type de sanction invalide'),
   body('motif').optional().isLength({ min: 5, max: 1000 }).withMessage('Le motif doit contenir entre 5 et 1000 caractères'),
   body('description').optional().isLength({ max: 2000 }).withMessage('La description ne doit pas dépasser 2000 caractères'),
   body('date_sanction').optional().isISO8601().withMessage('Format de date invalide'),
