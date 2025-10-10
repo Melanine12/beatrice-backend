@@ -35,6 +35,7 @@ const Contrat = require('./Contrat')(sequelize);
 const DocumentRH = require('./DocumentRH')(sequelize);
 const OffreEmploi = require('./OffreEmploi');
 const CandidatureOffre = require('./CandidatureOffre');
+const Dependant = require('./Dependant');
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -485,6 +486,10 @@ CandidatureOffre.belongsTo(OffreEmploi, { foreignKey: 'offre_id', as: 'offre' })
 User.hasMany(CandidatureOffre, { foreignKey: 'traite_par', as: 'CandidaturesTraitees' });
 CandidatureOffre.belongsTo(User, { foreignKey: 'traite_par', as: 'traiteur' });
 
+// Associations pour les dépendants
+// Note: Les associations avec tbl_employes seront gérées au niveau de la base de données
+// via les clés étrangères définies dans le modèle Dependant
+
 module.exports = {
   User,
   Chambre,
@@ -521,5 +526,6 @@ module.exports = {
   Contrat,
   DocumentRH,
   OffreEmploi,
-  CandidatureOffre
+  CandidatureOffre,
+  Dependant
 }; 
