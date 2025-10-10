@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const Dependant = require('../models/Dependant');
+const { Dependant, Employe } = require('../models');
 const { authenticateToken } = require('../middleware/auth');
 
 // Middleware pour valider les données de dépendant

@@ -489,6 +489,17 @@ CandidatureOffre.belongsTo(OffreEmploi, { foreignKey: 'offre_id', as: 'offre' })
 User.hasMany(CandidatureOffre, { foreignKey: 'traite_par', as: 'CandidaturesTraitees' });
 CandidatureOffre.belongsTo(User, { foreignKey: 'traite_par', as: 'traiteur' });
 
+// Associations pour les dépendants
+Employe.hasMany(Dependant, { foreignKey: 'employe_id', as: 'Dependants' });
+Dependant.belongsTo(Employe, { foreignKey: 'employe_id', as: 'employe' });
+
+// Associations pour les sanctions
+Employe.hasMany(Sanction, { foreignKey: 'employe_id', as: 'Sanctions' });
+Sanction.belongsTo(Employe, { foreignKey: 'employe_id', as: 'employe' });
+
+Employe.hasMany(Sanction, { foreignKey: 'sanction_par', as: 'SanctionsAppliquees' });
+Sanction.belongsTo(Employe, { foreignKey: 'sanction_par', as: 'sanctionPar' });
+
 // Associations pour les gratifications
 Employe.hasMany(Gratification, { foreignKey: 'employe_id', as: 'Gratifications' });
 Gratification.belongsTo(Employe, { foreignKey: 'employe_id', as: 'employe' });
