@@ -159,15 +159,30 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/nettoyage-espaces-publics - Create new public space cleaning
 router.post('/', [
-  body('date_nettoyage').isISO8601().toDate(),
+  body('date_nettoyage').isDate(),
   body('shift').isIn(['Matin', 'Après-midi', 'Soir', 'Nuit']),
   body('agent_id').isInt({ min: 1 }),
   body('nom_agent').isLength({ min: 1, max: 255 }),
   body('superviseur_id').isInt({ min: 1 }),
   body('nom_superviseur').isLength({ min: 1, max: 255 }),
-  body('espaces_nettoyes').isObject(),
-  body('taches_effectuees').isObject(),
-  body('verification_finale').isObject(),
+  body('espaces_nettoyes').custom((value) => {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new Error('espaces_nettoyes doit être un objet');
+    }
+    return true;
+  }),
+  body('taches_effectuees').custom((value) => {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new Error('taches_effectuees doit être un objet');
+    }
+    return true;
+  }),
+  body('verification_finale').custom((value) => {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new Error('verification_finale doit être un objet');
+    }
+    return true;
+  }),
   body('observations_generales').optional().isLength({ max: 2000 }),
   body('statut').optional().isIn(['En cours', 'Terminé', 'Validé', 'Rejeté'])
 ], async (req, res) => {
@@ -251,15 +266,30 @@ router.post('/', [
 
 // PUT /api/nettoyage-espaces-publics/:id - Update public space cleaning
 router.put('/:id', [
-  body('date_nettoyage').optional().isISO8601().toDate(),
+  body('date_nettoyage').optional().isDate(),
   body('shift').optional().isIn(['Matin', 'Après-midi', 'Soir', 'Nuit']),
   body('agent_id').optional().isInt({ min: 1 }),
   body('nom_agent').optional().isLength({ min: 1, max: 255 }),
   body('superviseur_id').optional().isInt({ min: 1 }),
   body('nom_superviseur').optional().isLength({ min: 1, max: 255 }),
-  body('espaces_nettoyes').optional().isObject(),
-  body('taches_effectuees').optional().isObject(),
-  body('verification_finale').optional().isObject(),
+  body('espaces_nettoyes').optional().custom((value) => {
+    if (value !== undefined && (typeof value !== 'object' || value === null || Array.isArray(value))) {
+      throw new Error('espaces_nettoyes doit être un objet');
+    }
+    return true;
+  }),
+  body('taches_effectuees').optional().custom((value) => {
+    if (value !== undefined && (typeof value !== 'object' || value === null || Array.isArray(value))) {
+      throw new Error('taches_effectuees doit être un objet');
+    }
+    return true;
+  }),
+  body('verification_finale').optional().custom((value) => {
+    if (value !== undefined && (typeof value !== 'object' || value === null || Array.isArray(value))) {
+      throw new Error('verification_finale doit être un objet');
+    }
+    return true;
+  }),
   body('observations_generales').optional().isLength({ max: 2000 }),
   body('statut').optional().isIn(['En cours', 'Terminé', 'Validé', 'Rejeté'])
 ], async (req, res) => {
