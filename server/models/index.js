@@ -39,6 +39,8 @@ const Dependant = require('./Dependant');
 const Sanction = require('./Sanction');
 const Gratification = require('./Gratification');
 const Employe = require('./Employe');
+const DeviceToken = require('./DeviceToken');
+const NettoyageEspacesPublics = require('./NettoyageEspacesPublics');
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -507,6 +509,23 @@ Gratification.belongsTo(Employe, { foreignKey: 'employe_id', as: 'employe' });
 Employe.hasMany(Gratification, { foreignKey: 'gratification_par', as: 'GratificationsAccordees' });
 Gratification.belongsTo(Employe, { foreignKey: 'gratification_par', as: 'gratificationPar' });
 
+// Associations pour les tokens d'appareils
+User.hasMany(DeviceToken, { foreignKey: 'user_id', as: 'deviceTokens' });
+DeviceToken.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Associations pour les nettoyages d'espaces publics
+User.hasMany(NettoyageEspacesPublics, { foreignKey: 'agent_id', as: 'NettoyagesAgent' });
+NettoyageEspacesPublics.belongsTo(User, { foreignKey: 'agent_id', as: 'agent' });
+
+User.hasMany(NettoyageEspacesPublics, { foreignKey: 'superviseur_id', as: 'NettoyagesSuperviseur' });
+NettoyageEspacesPublics.belongsTo(User, { foreignKey: 'superviseur_id', as: 'superviseur' });
+
+User.hasMany(NettoyageEspacesPublics, { foreignKey: 'created_by', as: 'NettoyagesCrees' });
+NettoyageEspacesPublics.belongsTo(User, { foreignKey: 'created_by', as: 'createur' });
+
+User.hasMany(NettoyageEspacesPublics, { foreignKey: 'updated_by', as: 'NettoyagesModifies' });
+NettoyageEspacesPublics.belongsTo(User, { foreignKey: 'updated_by', as: 'modificateur' });
+
 module.exports = {
   User,
   Chambre,
@@ -547,5 +566,7 @@ module.exports = {
   Dependant,
   Sanction,
   Gratification,
-  Employe
+  Employe,
+  DeviceToken,
+  NettoyageEspacesPublics
 }; 

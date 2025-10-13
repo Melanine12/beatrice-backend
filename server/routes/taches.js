@@ -6,6 +6,7 @@ const Chambre = require('../models/Chambre');
 const Problematique = require('../models/Problematique');
 const Departement = require('../models/Departement');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const pushNotificationService = require('../services/pushNotificationService');
 
 const router = express.Router();
 
@@ -238,6 +239,17 @@ router.post('/', [
 
     const tache = await Tache.create(tacheData);
 
+    // Envoyer notification push si assigné
+    if (tache.assigne_id) {
+      try {
+        await pushNotificationService.notifyTaskAssignment(tache.assigne_id, tache);
+        console.log(`✅ Notification push envoyée pour la tâche #${tache.id}`);
+      } catch (notifError) {
+        console.error('❌ Erreur notification push tâche:', notifError);
+        // Ne pas bloquer la création de la tâche si la notification échoue
+      }
+    }
+
     res.status(201).json({
       message: 'Tâche créée avec succès',
       tache
@@ -369,7 +381,34 @@ router.put('/:id', [
       delete updateData.notes;
     }
 
+    // Vérifier si l'assignation a changé
+    const assignationChanged = updateData.assigne_id && updateData.assigne_id !== tache.assigne_id;
+    const previousAssignee = tache.assigne_id;
+
     await tache.update(updateData);
+
+    // Envoyer notification si l'assignation a changé
+    if (assignationChanged && updateData.assigne_id) {
+      try {
+        await pushNotificationService.notifyTaskAssignment(updateData.assigne_id, tache);
+        console.log(`✅ Notification push envoyée pour la réassignation de la tâche #${tache.id}`);
+      } catch (notifError) {
+        console.error('❌ Erreur notification push réassignation:', notifError);
+      }
+    }
+
+    // Envoyer notification de changement de statut si applicable
+    if (updateData.statut && updateData.statut !== tache.statut) {
+      try {
+        const targetUserId = updateData.assigne_id || previousAssignee;
+        if (targetUserId) {
+          await pushNotificationService.notifyStatusUpdate(targetUserId, tache, updateData.statut, 'task');
+          console.log(`✅ Notification push statut envoyée pour la tâche #${tache.id}`);
+        }
+      } catch (notifError) {
+        console.error('❌ Erreur notification push statut:', notifError);
+      }
+    }
 
     res.json({
       message: 'Tâche mise à jour avec succès',

@@ -13,6 +13,7 @@ const SousDepartement = require('../models/SousDepartement');
 const Tache = require('../models/Tache');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const CloudinaryImageService = require('../services/cloudinaryImageService');
+const pushNotificationService = require('../services/pushNotificationService');
 const imageService = new CloudinaryImageService();
 
 const router = express.Router();
@@ -849,7 +850,34 @@ router.put('/:id', [
       }
     }
 
+    // Vérifier si l'assignation a changé
+    const assignationChanged = updateData.assigne_id && updateData.assigne_id !== problematique.assigne_id;
+    const previousAssignee = problematique.assigne_id;
+
     await problematique.update(updateData);
+
+    // Envoyer notification si l'assignation a changé
+    if (assignationChanged && updateData.assigne_id) {
+      try {
+        await pushNotificationService.notifyProblematiqueAssignment(updateData.assigne_id, problematique);
+        console.log(`✅ Notification push envoyée pour l'assignation de la problématique #${problematique.id}`);
+      } catch (notifError) {
+        console.error('❌ Erreur notification push assignation:', notifError);
+      }
+    }
+
+    // Envoyer notification de changement de statut si applicable
+    if (updateData.statut && updateData.statut !== problematique.statut) {
+      try {
+        const targetUserId = updateData.assigne_id || previousAssignee;
+        if (targetUserId) {
+          await pushNotificationService.notifyStatusUpdate(targetUserId, problematique, updateData.statut, 'problematique');
+          console.log(`✅ Notification push statut envoyée pour la problématique #${problematique.id}`);
+        }
+      } catch (notifError) {
+        console.error('❌ Erreur notification push statut:', notifError);
+      }
+    }
 
     res.json({
       message: 'Problématique mise à jour avec succès',
