@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const authenticateToken = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const pushNotificationService = require('../services/pushNotificationService');
 const DeviceToken = require('../models/DeviceToken');
 
