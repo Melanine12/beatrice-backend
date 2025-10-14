@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
 const { NettoyageChambre, User, Chambre } = require('../models');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth'); // Fixed import path
 
 const router = express.Router();
 
