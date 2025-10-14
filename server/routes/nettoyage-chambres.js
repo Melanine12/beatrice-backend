@@ -269,7 +269,7 @@ router.get('/options/users', authenticateToken, async (req, res) => {
     const search = req.query.search;
 
     const whereClause = {
-      statut: 'Actif'
+      actif: true
     };
     
     if (search) {
