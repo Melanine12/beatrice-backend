@@ -41,7 +41,7 @@ const Gratification = require('./Gratification');
 const Employe = require('./Employe');
 const DeviceToken = require('./DeviceToken');
 const NettoyageEspacesPublics = require('./NettoyageEspacesPublics');
-const CheckLinge = require('./CheckLinge');
+const CheckLinge = require('./CheckLinge')(sequelize);
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
