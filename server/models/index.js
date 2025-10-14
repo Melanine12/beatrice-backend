@@ -41,6 +41,7 @@ const Gratification = require('./Gratification');
 const Employe = require('./Employe');
 const DeviceToken = require('./DeviceToken');
 const NettoyageEspacesPublics = require('./NettoyageEspacesPublics');
+const CheckLinge = require('./CheckLinge');
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -526,6 +527,22 @@ NettoyageEspacesPublics.belongsTo(User, { foreignKey: 'created_by', as: 'createu
 User.hasMany(NettoyageEspacesPublics, { foreignKey: 'updated_by', as: 'NettoyagesModifies' });
 NettoyageEspacesPublics.belongsTo(User, { foreignKey: 'updated_by', as: 'modificateur' });
 
+// Associations pour le check linge
+User.hasMany(CheckLinge, { foreignKey: 'agent_id', as: 'ChecksLingeAgent' });
+CheckLinge.belongsTo(User, { foreignKey: 'agent_id', as: 'agent' });
+
+Chambre.hasMany(CheckLinge, { foreignKey: 'chambre_id', as: 'ChecksLinge' });
+CheckLinge.belongsTo(Chambre, { foreignKey: 'chambre_id', as: 'chambre' });
+
+Inventaire.hasMany(CheckLinge, { foreignKey: 'article_id', as: 'ChecksLingeArticle' });
+CheckLinge.belongsTo(Inventaire, { foreignKey: 'article_id', as: 'article' });
+
+User.hasMany(CheckLinge, { foreignKey: 'created_by', as: 'ChecksLingeCrees' });
+CheckLinge.belongsTo(User, { foreignKey: 'created_by', as: 'createur' });
+
+User.hasMany(CheckLinge, { foreignKey: 'updated_by', as: 'ChecksLingeModifies' });
+CheckLinge.belongsTo(User, { foreignKey: 'updated_by', as: 'modificateur' });
+
 module.exports = {
   User,
   Chambre,
@@ -568,5 +585,6 @@ module.exports = {
   Gratification,
   Employe,
   DeviceToken,
-  NettoyageEspacesPublics
+  NettoyageEspacesPublics,
+  CheckLinge
 }; 

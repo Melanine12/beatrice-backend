@@ -47,6 +47,7 @@ const sanctionsRoutes = require('./routes/sanctions');
 const gratificationsRoutes = require('./routes/gratifications');
 const deviceTokensRoutes = require('./routes/deviceTokens');
 const nettoyageEspacesPublicsRoutes = require('./routes/nettoyage-espaces-publics');
+const checkLingeRoutes = require('./routes/check-linge');
 const offreNotificationService = require('./services/offreNotificationService');
 
 const app = express();
@@ -234,6 +235,7 @@ app.use('/api/sanctions', sanctionsRoutes);
 app.use('/api/gratifications', gratificationsRoutes);
 app.use('/api/device-tokens', deviceTokensRoutes);
 app.use('/api/nettoyage-espaces-publics', nettoyageEspacesPublicsRoutes);
+app.use('/api/check-linge', checkLingeRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
