@@ -42,6 +42,7 @@ const Employe = require('./Employe');
 const DeviceToken = require('./DeviceToken');
 const NettoyageEspacesPublics = require('./NettoyageEspacesPublics');
 const CheckLinge = require('./CheckLinge')(sequelize);
+const NettoyageChambre = require('./NettoyageChambre')(sequelize);
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -543,6 +544,19 @@ CheckLinge.belongsTo(User, { foreignKey: 'created_by', as: 'createur' });
 User.hasMany(CheckLinge, { foreignKey: 'updated_by', as: 'ChecksLingeModifies' });
 CheckLinge.belongsTo(User, { foreignKey: 'updated_by', as: 'modificateur' });
 
+// Associations pour le nettoyage des chambres
+User.hasMany(NettoyageChambre, { foreignKey: 'agent_id', as: 'NettoyagesChambresAgent' });
+NettoyageChambre.belongsTo(User, { foreignKey: 'agent_id', as: 'Agent' });
+
+Chambre.hasMany(NettoyageChambre, { foreignKey: 'chambre_id', as: 'NettoyagesChambres' });
+NettoyageChambre.belongsTo(Chambre, { foreignKey: 'chambre_id', as: 'Chambre' });
+
+User.hasMany(NettoyageChambre, { foreignKey: 'created_by', as: 'NettoyagesChambresCrees' });
+NettoyageChambre.belongsTo(User, { foreignKey: 'created_by', as: 'Createur' });
+
+User.hasMany(NettoyageChambre, { foreignKey: 'updated_by', as: 'NettoyagesChambresModifies' });
+NettoyageChambre.belongsTo(User, { foreignKey: 'updated_by', as: 'Modificateur' });
+
 module.exports = {
   User,
   Chambre,
@@ -586,5 +600,6 @@ module.exports = {
   Employe,
   DeviceToken,
   NettoyageEspacesPublics,
-  CheckLinge
+  CheckLinge,
+  NettoyageChambre
 }; 
