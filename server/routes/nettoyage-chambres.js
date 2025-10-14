@@ -264,23 +264,90 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
 // GET /api/nettoyage-chambres/options/users - Options pour les utilisateurs
 router.get('/options/users', authenticateToken, async (req, res) => {
   try {
+    const { Op } = require('sequelize');
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const search = req.query.search;
+
+    const whereClause = {
+      statut: 'Actif'
+    };
+    
+    if (search) {
+      whereClause[Op.or] = [
+        { nom: { [Op.like]: `%${search}%` } },
+        { prenom: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
     const users = await User.findAll({
-      attributes: ['id', 'prenom', 'nom', 'email'],
-      where: {
-        statut: 'Actif'
-      },
-      order: [['prenom', 'ASC']]
+      attributes: ['id', 'prenom', 'nom', 'email', 'role'],
+      where: whereClause,
+      order: [['nom', 'ASC'], ['prenom', 'ASC']],
+      limit
     });
 
     res.json({
       success: true,
-      data: users
+      data: users.map(user => ({
+        id: user.id,
+        prenom: user.prenom,
+        nom: user.nom,
+        email: user.email,
+        role: user.role,
+        label: `${user.prenom} ${user.nom}`,
+        value: user.id
+      }))
     });
   } catch (error) {
     console.error('Error fetching users options:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des utilisateurs',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/nettoyage-chambres/options/chambres - Options pour les chambres
+router.get('/options/chambres', authenticateToken, async (req, res) => {
+  try {
+    const { Op } = require('sequelize');
+    const limit = Math.min(parseInt(req.query.limit) || 1000, 5000);
+    const search = req.query.search;
+
+    const whereClause = {};
+    if (search) {
+      whereClause[Op.or] = [
+        { numero: { [Op.like]: `%${search}%` } },
+        { type: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    const chambres = await Chambre.findAll({
+      attributes: ['id', 'numero', 'type', 'etage', 'statut'],
+      where: whereClause,
+      order: [['numero', 'ASC']],
+      limit
+    });
+
+    res.json({
+      success: true,
+      data: chambres.map(chambre => ({
+        id: chambre.id,
+        numero: chambre.numero,
+        type: chambre.type,
+        etage: chambre.etage,
+        statut: chambre.statut,
+        label: `Chambre ${chambre.numero}`,
+        value: chambre.id
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching chambres options:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des chambres',
       error: error.message
     });
   }
@@ -294,7 +361,6 @@ router.post('/', [
   body('type_chambre').optional().isString().withMessage('Type de chambre invalide'),
   validateTime('heure_entree'),
   validateTime('heure_sortie'),
-  body('signature').optional().isString(),
   validateJsonField('etat_avant_nettoyage'),
   validateJsonField('taches_nettoyage'),
   body('statut').optional().isIn(['En cours', 'Terminé', 'Validé', 'Rejeté']),
@@ -359,7 +425,6 @@ router.put('/:id', [
   body('type_chambre').optional().isString().withMessage('Type de chambre invalide'),
   body('heure_entree').optional().matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Heure d\'entrée invalide'),
   body('heure_sortie').optional().matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Heure de sortie invalide'),
-  body('signature').optional().isString(),
   body('etat_avant_nettoyage').optional().custom((value) => {
     if (typeof value !== 'object' || value === null) {
       throw new Error('État avant nettoyage doit être un objet valide');

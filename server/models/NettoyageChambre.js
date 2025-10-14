@@ -34,11 +34,8 @@ module.exports = (sequelize) => {
       }
     },
     type_chambre: {
-      type: DataTypes.ENUM('Standard', 'Twis', 'Suite Junior', 'Suite diplomatique'),
-      allowNull: false,
-      validate: {
-        isIn: [['Standard', 'Twis', 'Suite Junior', 'Suite diplomatique']]
-      }
+      type: DataTypes.STRING(100),
+      allowNull: true
     },
     heure_entree: {
       type: DataTypes.TIME,
@@ -53,10 +50,6 @@ module.exports = (sequelize) => {
       validate: {
         is: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
       }
-    },
-    signature: {
-      type: DataTypes.STRING(255),
-      allowNull: true
     },
     
     // État de la chambre avant nettoyage (JSON)
