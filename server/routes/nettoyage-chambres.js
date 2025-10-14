@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
 const { NettoyageChambre, User, Chambre } = require('../models');
-const auth = require('../middleware/auth');
+const { authenticateTokenenticateToken } = require('../middleware/authenticateToken');
 
 const router = express.Router();
 
@@ -29,7 +29,7 @@ router.get('/', [
   query('agent_id').optional().isInt().withMessage('ID agent invalide'),
   query('statut').optional().isIn(['En cours', 'Terminé', 'Validé', 'Rejeté']).withMessage('Statut invalide'),
   query('search').optional().isString().withMessage('Recherche invalide')
-], auth, async (req, res) => {
+], authenticateToken, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -105,7 +105,7 @@ router.get('/', [
 });
 
 // GET /api/nettoyage-chambres/:id - Récupérer un nettoyage par ID
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const nettoyage = await NettoyageChambre.findByPk(id, {
@@ -145,7 +145,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // GET /api/nettoyage-chambres/agent/:agentId - Récupérer les nettoyages d'un agent
-router.get('/agent/:agentId', auth, async (req, res) => {
+router.get('/agent/:agentId', authenticateToken, async (req, res) => {
   try {
     const { agentId } = req.params;
     const { date_debut, date_fin } = req.query;
@@ -181,7 +181,7 @@ router.get('/agent/:agentId', auth, async (req, res) => {
 });
 
 // GET /api/nettoyage-chambres/chambre/:chambreId - Récupérer les nettoyages d'une chambre
-router.get('/chambre/:chambreId', auth, async (req, res) => {
+router.get('/chambre/:chambreId', authenticateToken, async (req, res) => {
   try {
     const { chambreId } = req.params;
     const { date_debut, date_fin } = req.query;
@@ -217,7 +217,7 @@ router.get('/chambre/:chambreId', auth, async (req, res) => {
 });
 
 // GET /api/nettoyage-chambres/stats/overview - Statistiques générales
-router.get('/stats/overview', auth, async (req, res) => {
+router.get('/stats/overview', authenticateToken, async (req, res) => {
   try {
     const { date_debut, date_fin } = req.query;
 
@@ -262,7 +262,7 @@ router.get('/stats/overview', auth, async (req, res) => {
 });
 
 // GET /api/nettoyage-chambres/options/users - Options pour les utilisateurs
-router.get('/options/users', auth, async (req, res) => {
+router.get('/options/users', authenticateToken, async (req, res) => {
   try {
     const users = await User.findAll({
       attributes: ['id', 'prenom', 'nom', 'email'],
@@ -301,7 +301,7 @@ router.post('/', [
   body('observations_generales').optional().isString(),
   body('agent_id').optional().isInt(),
   body('chambre_id').optional().isInt()
-], auth, async (req, res) => {
+], authenticateToken, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -376,7 +376,7 @@ router.put('/:id', [
   body('observations_generales').optional().isString(),
   body('agent_id').optional().isInt(),
   body('chambre_id').optional().isInt()
-], auth, async (req, res) => {
+], authenticateToken, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -436,7 +436,7 @@ router.put('/:id', [
 });
 
 // DELETE /api/nettoyage-chambres/:id - Supprimer un nettoyage
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const nettoyage = await NettoyageChambre.findByPk(id);
@@ -467,7 +467,7 @@ router.delete('/:id', auth, async (req, res) => {
 // PATCH /api/nettoyage-chambres/:id/status - Mettre à jour le statut
 router.patch('/:id/status', [
   body('statut').isIn(['En cours', 'Terminé', 'Validé', 'Rejeté']).withMessage('Statut invalide')
-], auth, async (req, res) => {
+], authenticateToken, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
