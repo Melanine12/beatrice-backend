@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
 const { NettoyageChambre, User, Chambre } = require('../models');
-const { authenticateTokenenticateToken } = require('../middleware/authenticateToken');
+const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
