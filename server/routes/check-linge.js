@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
 const { CheckLinge, User, Chambre, Inventaire } = require('../models');
-const auth = require('../middleware/auth');
+const { authenticateTokenenticateToken } = require('../middleware/authenticateToken');
 const router = express.Router();
 
 // Validation rules
@@ -30,7 +30,7 @@ const updateCheckLingeValidation = [
 ];
 
 // GET /api/check-linge - Récupérer tous les checks linge avec filtres
-router.get('/', auth, [
+router.get('/', authenticateToken, [
   query('page').optional().isInt({ min: 1 }).withMessage('Page invalide'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limite invalide'),
   query('date_check').optional().isISO8601().withMessage('Date invalide'),
@@ -111,7 +111,7 @@ router.get('/', auth, [
 });
 
 // GET /api/check-linge/:id - Récupérer un check linge par ID
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -145,7 +145,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // GET /api/check-linge/chambre/:chambreId - Récupérer les checks linge d'une chambre
-router.get('/chambre/:chambreId', auth, [
+router.get('/chambre/:chambreId', authenticateToken, [
   query('date_check').optional().isISO8601().withMessage('Date invalide')
 ], async (req, res) => {
   try {
@@ -188,7 +188,7 @@ router.get('/chambre/:chambreId', auth, [
 });
 
 // GET /api/check-linge/agent/:agentId - Récupérer les checks linge d'un agent
-router.get('/agent/:agentId', auth, [
+router.get('/agent/:agentId', authenticateToken, [
   query('date_check').optional().isISO8601().withMessage('Date invalide'),
   query('start_date').optional().isISO8601().withMessage('Date de début invalide'),
   query('end_date').optional().isISO8601().withMessage('Date de fin invalide')
@@ -239,7 +239,7 @@ router.get('/agent/:agentId', auth, [
 });
 
 // GET /api/check-linge/stats/overview - Statistiques générales
-router.get('/stats/overview', auth, [
+router.get('/stats/overview', authenticateToken, [
   query('date_check').optional().isISO8601().withMessage('Date invalide'),
   query('start_date').optional().isISO8601().withMessage('Date de début invalide'),
   query('end_date').optional().isISO8601().withMessage('Date de fin invalide')
@@ -322,7 +322,7 @@ router.get('/stats/overview', auth, [
 });
 
 // GET /api/check-linge/stats/agent/:agentId - Statistiques par agent
-router.get('/stats/agent/:agentId', auth, [
+router.get('/stats/agent/:agentId', authenticateToken, [
   query('start_date').isISO8601().withMessage('Date de début requise'),
   query('end_date').isISO8601().withMessage('Date de fin requise')
 ], async (req, res) => {
@@ -356,7 +356,7 @@ router.get('/stats/agent/:agentId', auth, [
 });
 
 // GET /api/check-linge/stats/chambre/:chambreId - Statistiques par chambre
-router.get('/stats/chambre/:chambreId', auth, [
+router.get('/stats/chambre/:chambreId', authenticateToken, [
   query('start_date').isISO8601().withMessage('Date de début requise'),
   query('end_date').isISO8601().withMessage('Date de fin requise')
 ], async (req, res) => {
@@ -390,7 +390,7 @@ router.get('/stats/chambre/:chambreId', auth, [
 });
 
 // POST /api/check-linge - Créer un nouveau check linge
-router.post('/', auth, checkLingeValidation, async (req, res) => {
+router.post('/', authenticateToken, checkLingeValidation, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -443,7 +443,7 @@ router.post('/', auth, checkLingeValidation, async (req, res) => {
 });
 
 // PUT /api/check-linge/:id - Mettre à jour un check linge
-router.put('/:id', auth, updateCheckLingeValidation, async (req, res) => {
+router.put('/:id', authenticateToken, updateCheckLingeValidation, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -518,7 +518,7 @@ router.put('/:id', auth, updateCheckLingeValidation, async (req, res) => {
 });
 
 // PATCH /api/check-linge/:id/status - Mettre à jour le statut
-router.patch('/:id/status', auth, [
+router.patch('/:id/status', authenticateToken, [
   body('statut').isIn(['En cours', 'Terminé', 'Validé', 'Rejeté']).withMessage('Statut invalide')
 ], async (req, res) => {
   try {
@@ -561,7 +561,7 @@ router.patch('/:id/status', auth, [
 });
 
 // DELETE /api/check-linge/:id - Supprimer un check linge
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
