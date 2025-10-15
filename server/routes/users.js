@@ -172,21 +172,31 @@ router.post('/', [
   body('role').isIn(['Agent', 'Superviseur', 'Administrateur', 'Patron']),
   body('telephone').optional().isLength({ max: 20 }),
   body('departement_id').optional().custom((value) => {
+    // Accepter null, undefined, chaîne vide, ou un entier positif
     if (value === null || value === undefined || value === '') return true;
-    if (typeof value === 'number' && value >= 1) return true;
-    if (typeof value === 'string' && !isNaN(value) && parseInt(value) >= 1) return true;
-    throw new Error('departement_id doit être un entier positif ou null');
+    if (typeof value === 'number' && Number.isInteger(value) && value >= 1) return true;
+    if (typeof value === 'string') {
+      const num = parseInt(value);
+      if (!isNaN(num) && Number.isInteger(num) && num >= 1) return true;
+    }
+    throw new Error('departement_id doit être un entier positif ou vide');
   }),
   body('sous_departement_id').optional().custom((value) => {
+    // Accepter null, undefined, chaîne vide, ou un entier positif
     if (value === null || value === undefined || value === '') return true;
-    if (typeof value === 'number' && value >= 1) return true;
-    if (typeof value === 'string' && !isNaN(value) && parseInt(value) >= 1) return true;
-    throw new Error('sous_departement_id doit être un entier positif ou null');
+    if (typeof value === 'number' && Number.isInteger(value) && value >= 1) return true;
+    if (typeof value === 'string') {
+      const num = parseInt(value);
+      if (!isNaN(num) && Number.isInteger(num) && num >= 1) return true;
+    }
+    throw new Error('sous_departement_id doit être un entier positif ou vide');
   })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.error('User creation validation errors:', errors.array());
+      console.error('Request body:', req.body);
       return res.status(400).json({ 
         error: 'Validation failed',
         message: 'Données de validation invalides',
@@ -247,16 +257,24 @@ router.put('/:id', [
   body('telephone').optional().isLength({ max: 20 }),
   body('actif').optional().isBoolean(),
   body('departement_id').optional().custom((value) => {
+    // Accepter null, undefined, chaîne vide, ou un entier positif
     if (value === null || value === undefined || value === '') return true;
-    if (typeof value === 'number' && value >= 1) return true;
-    if (typeof value === 'string' && !isNaN(value) && parseInt(value) >= 1) return true;
-    throw new Error('departement_id doit être un entier positif ou null');
+    if (typeof value === 'number' && Number.isInteger(value) && value >= 1) return true;
+    if (typeof value === 'string') {
+      const num = parseInt(value);
+      if (!isNaN(num) && Number.isInteger(num) && num >= 1) return true;
+    }
+    throw new Error('departement_id doit être un entier positif ou vide');
   }),
   body('sous_departement_id').optional().custom((value) => {
+    // Accepter null, undefined, chaîne vide, ou un entier positif
     if (value === null || value === undefined || value === '') return true;
-    if (typeof value === 'number' && value >= 1) return true;
-    if (typeof value === 'string' && !isNaN(value) && parseInt(value) >= 1) return true;
-    throw new Error('sous_departement_id doit être un entier positif ou null');
+    if (typeof value === 'number' && Number.isInteger(value) && value >= 1) return true;
+    if (typeof value === 'string') {
+      const num = parseInt(value);
+      if (!isNaN(num) && Number.isInteger(num) && num >= 1) return true;
+    }
+    throw new Error('sous_departement_id doit être un entier positif ou vide');
   })
 ], async (req, res) => {
   try {
