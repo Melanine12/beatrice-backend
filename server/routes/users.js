@@ -12,7 +12,12 @@ router.use(authenticateToken);
 // GET /api/users - Get all users (temporarily allowing all authenticated users for testing)
 router.get('/', [
   // requireRole('Administrateur'), // Temporarily commented for testing
-  query('role').optional().isIn(['Agent', 'Superviseur', 'Administrateur', 'Patron']),
+  query('role').optional().isIn([
+    'Agent Chambre', 'Superviseur Resto', 'Superviseur Buanderie', 
+    'Superviseur Housing', 'Superviseur RH', 'Superviseur Comptable', 
+    'Web Master', 'Superviseur Finance', 'Agent', 'Superviseur', 
+    'Administrateur', 'Patron', 'Guichetier', 'Superviseur Stock'
+  ]),
   query('actif').optional().isBoolean(),
   query('departement_id').optional().isInt({ min: 1 }),
   query('sous_departement_id').optional().isInt({ min: 1 }),
@@ -169,7 +174,12 @@ router.post('/', [
   body('prenom').isLength({ min: 2, max: 100 }),
   body('email').isEmail().normalizeEmail(),
   body('mot_de_passe').isLength({ min: 6 }),
-  body('role').isIn(['Agent', 'Superviseur', 'Administrateur', 'Patron']),
+  body('role').isIn([
+    'Agent Chambre', 'Superviseur Resto', 'Superviseur Buanderie', 
+    'Superviseur Housing', 'Superviseur RH', 'Superviseur Comptable', 
+    'Web Master', 'Superviseur Finance', 'Agent', 'Superviseur', 
+    'Administrateur', 'Patron', 'Guichetier', 'Superviseur Stock'
+  ]),
   body('telephone').optional().isLength({ max: 20 }),
   body('departement_id').optional().custom((value) => {
     // Accepter null, undefined, chaîne vide, ou un entier positif
@@ -253,7 +263,12 @@ router.put('/:id', [
   body('nom').optional().isLength({ min: 2, max: 100 }),
   body('prenom').optional().isLength({ min: 2, max: 100 }),
   body('email').optional().isEmail().normalizeEmail(),
-  body('role').optional().isIn(['Agent', 'Superviseur', 'Administrateur', 'Patron']),
+  body('role').optional().isIn([
+    'Agent Chambre', 'Superviseur Resto', 'Superviseur Buanderie', 
+    'Superviseur Housing', 'Superviseur RH', 'Superviseur Comptable', 
+    'Web Master', 'Superviseur Finance', 'Agent', 'Superviseur', 
+    'Administrateur', 'Patron', 'Guichetier', 'Superviseur Stock'
+  ]),
   body('telephone').optional().isLength({ max: 20 }),
   body('actif').optional().isBoolean(),
   body('departement_id').optional().custom((value) => {
