@@ -560,6 +560,106 @@ router.patch('/:id/status', authenticateToken, [
   }
 });
 
+// PUT /api/check-linge/chambre/:chambreId/article/:articleId - Mettre à jour un article spécifique
+router.put('/chambre/:chambreId/article/:articleId', authenticateToken, [
+  body('quantite_verifiee').optional().isInt({ min: 0 }).withMessage('Quantité vérifiée invalide'),
+  body('etat').optional().isIn(['Bon', 'Usé', 'Abîmé', 'Manquant']).withMessage('État invalide'),
+  body('observations').optional().isString().withMessage('Observations invalides')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Données invalides',
+        errors: errors.array()
+      });
+    }
+
+    const { chambreId, articleId } = req.params;
+    const { quantite_verifiee, etat, observations } = req.body;
+
+    // Vérifier que la chambre existe
+    const chambre = await Chambre.findByPk(chambreId);
+    if (!chambre) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chambre non trouvée'
+      });
+    }
+
+    // Vérifier que l'article existe
+    const article = await Inventaire.findByPk(articleId);
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        message: 'Article non trouvé'
+      });
+    }
+
+    // Trouver le check linge le plus récent pour cette chambre
+    const checkLinge = await CheckLinge.findOne({
+      where: { chambre_id: chambreId },
+      order: [['date_check', 'DESC']]
+    });
+
+    if (!checkLinge) {
+      return res.status(404).json({
+        success: false,
+        message: 'Aucun check linge trouvé pour cette chambre'
+      });
+    }
+
+    // Mettre à jour les détails de l'article dans le check linge
+    const articles = checkLinge.articles || [];
+    const articleIndex = articles.findIndex(item => item.article_id === parseInt(articleId));
+    
+    if (articleIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Article non trouvé dans ce check linge'
+      });
+    }
+
+    // Mettre à jour les données de l'article
+    if (quantite_verifiee !== undefined) {
+      articles[articleIndex].quantite_verifiee = quantite_verifiee;
+    }
+    if (etat !== undefined) {
+      articles[articleIndex].etat = etat;
+    }
+    if (observations !== undefined) {
+      articles[articleIndex].observations = observations;
+    }
+
+    // Sauvegarder les modifications
+    await checkLinge.update({
+      articles: articles,
+      updated_at: new Date()
+    });
+
+    res.json({
+      success: true,
+      message: 'Article mis à jour avec succès',
+      data: {
+        check_linge_id: checkLinge.id,
+        article_id: articleId,
+        quantite_verifiee: articles[articleIndex].quantite_verifiee,
+        etat: articles[articleIndex].etat,
+        observations: articles[articleIndex].observations
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'article:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la mise à jour de l\'article',
+      error: error.message
+    });
+  }
+});
+
 // DELETE /api/check-linge/:id - Supprimer un check linge
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
