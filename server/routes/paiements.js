@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
-const { PaiementSalaireSalaire, User } = require('../models');
+const { PaiementSalaire, User } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
