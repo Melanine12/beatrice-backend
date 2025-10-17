@@ -78,9 +78,9 @@ router.get('/', [
     const { count, rows: encaissements } = await Encaissement.findAndCountAll({
       where: whereClause,
       include: [
-        { model: User, as: 'Validateur', attributes: ['id', 'prenoms', 'nom_famille', 'email'] },
-        { model: User, as: 'Createur', attributes: ['id', 'prenoms', 'nom_famille', 'email'] },
-        { model: User, as: 'Modificateur', attributes: ['id', 'prenoms', 'nom_famille', 'email'] }
+        { model: User, as: 'Validateur', attributes: ['id', 'prenom', 'nom', 'email'] },
+        { model: User, as: 'Createur', attributes: ['id', 'prenom', 'nom', 'email'] },
+        { model: User, as: 'Modificateur', attributes: ['id', 'prenom', 'nom', 'email'] }
       ],
       order: [['date_paiement', 'DESC']],
       limit: parseInt(limit),
@@ -168,9 +168,9 @@ router.get('/:id', [
   try {
     const encaissement = await Encaissement.findByPk(req.params.id, {
       include: [
-        { model: User, as: 'Validateur', attributes: ['id', 'prenoms', 'nom_famille', 'email'] },
-        { model: User, as: 'Createur', attributes: ['id', 'prenoms', 'nom_famille', 'email'] },
-        { model: User, as: 'Modificateur', attributes: ['id', 'prenoms', 'nom_famille', 'email'] }
+        { model: User, as: 'Validateur', attributes: ['id', 'prenom', 'nom', 'email'] },
+        { model: User, as: 'Createur', attributes: ['id', 'prenom', 'nom', 'email'] },
+        { model: User, as: 'Modificateur', attributes: ['id', 'prenom', 'nom', 'email'] }
       ]
     });
 
