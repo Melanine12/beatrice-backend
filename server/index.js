@@ -211,7 +211,7 @@ app.use('/api/achats', achatRoutes);
 app.use('/api/mouvements-stock', mouvementStockRoutes);
 app.use('/api/entrepots', entrepotRoutes);
 app.use('/api/caisses', caisseRoutes);
-app.use('/api/paiements', paiementsRoutes);
+app.use('/api/paiements-salaires', paiementsRoutes);
 app.use('/api/demandes', demandesRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/demandes-affectation', demandesAffectationRoutes);

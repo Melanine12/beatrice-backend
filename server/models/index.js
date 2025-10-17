@@ -10,7 +10,7 @@ const Achat = require('./Achat');
 const LigneAchat = require('./LigneAchat');
 const MouvementStock = require('./MouvementStock');
 const Entrepot = require('./Entrepot');
-const Paiement = require('./Paiement');
+const Paiement = require('./Paiement')(sequelize);
 const Caisse = require('./Caisse');
 const AffectationChambre = require('./AffectationChambre');
 const Demande = require('./Demande');
@@ -58,23 +58,18 @@ Tache.belongsTo(User, { foreignKey: 'createur_id', as: 'createur' });
 User.hasMany(Tache, { foreignKey: 'assigne_id', as: 'TachesAssigne' });
 Tache.belongsTo(User, { foreignKey: 'assigne_id', as: 'assigne' });
 
-User.hasMany(Paiement, { foreignKey: 'utilisateur_id', as: 'PaiementsUtilisateur' });
-Paiement.belongsTo(User, { foreignKey: 'utilisateur_id', as: 'utilisateur' });
+// Associations pour les paiements d'employés
+User.hasMany(Paiement, { foreignKey: 'employe_id', as: 'PaiementsEmploye' });
+Paiement.belongsTo(User, { foreignKey: 'employe_id', as: 'Employe' });
 
-User.hasMany(Paiement, { foreignKey: 'user_guichet_id', as: 'PaiementsGuichet' });
-Paiement.belongsTo(User, { foreignKey: 'user_guichet_id', as: 'UserGuichet' });
+User.hasMany(Paiement, { foreignKey: 'valide_par', as: 'PaiementsValides' });
+Paiement.belongsTo(User, { foreignKey: 'valide_par', as: 'Validateur' });
 
-// Associations pour les paiements et caisses
-Caisse.hasMany(Paiement, { foreignKey: 'caisse_id', as: 'Paiements' });
-Paiement.belongsTo(Caisse, { foreignKey: 'caisse_id', as: 'caisse' });
+User.hasMany(Paiement, { foreignKey: 'created_by', as: 'PaiementsCrees' });
+Paiement.belongsTo(User, { foreignKey: 'created_by', as: 'Createur' });
 
-// Associations pour les paiements et chambres
-Chambre.hasMany(Paiement, { foreignKey: 'chambre_id', as: 'Paiements' });
-Paiement.belongsTo(Chambre, { foreignKey: 'chambre_id', as: 'chambre' });
-
-// Associations pour les paiements et dépenses
-Depense.hasMany(Paiement, { foreignKey: 'depense_id', as: 'Paiements' });
-Paiement.belongsTo(Depense, { foreignKey: 'depense_id', as: 'depense' });
+User.hasMany(Paiement, { foreignKey: 'updated_by', as: 'PaiementsModifies' });
+Paiement.belongsTo(User, { foreignKey: 'updated_by', as: 'Modificateur' });
 
 // Associations pour les dépenses
 User.hasMany(Depense, { foreignKey: 'demandeur_id', as: 'DepensesDemandeur' });
