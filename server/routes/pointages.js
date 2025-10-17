@@ -1,11 +1,11 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const { Pointage, User } = require('../models');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
 // Middleware d'authentification pour toutes les routes
-router.use(requireAuth);
+router.use(authenticateToken);
 
 // GET /api/pointages - Récupérer les pointages avec filtres
 router.get('/', [
