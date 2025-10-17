@@ -44,6 +44,7 @@ const NettoyageEspacesPublics = require('./NettoyageEspacesPublics');
 const CheckLinge = require('./CheckLinge')(sequelize);
 const NettoyageChambre = require('./NettoyageChambre')(sequelize);
 const Encaissement = require('./Encaissement')(sequelize);
+const Pointage = require('./Pointage')(sequelize);
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -563,6 +564,19 @@ Encaissement.belongsTo(User, { foreignKey: 'created_by', as: 'Createur' });
 User.hasMany(Encaissement, { foreignKey: 'updated_by', as: 'EncaissementsModifies' });
 Encaissement.belongsTo(User, { foreignKey: 'updated_by', as: 'Modificateur' });
 
+// Associations pour les pointages
+User.hasMany(Pointage, { foreignKey: 'employe_id', as: 'PointagesEmploye' });
+Pointage.belongsTo(User, { foreignKey: 'employe_id', as: 'Employe' });
+
+User.hasMany(Pointage, { foreignKey: 'valide_par', as: 'PointagesValides' });
+Pointage.belongsTo(User, { foreignKey: 'valide_par', as: 'Validateur' });
+
+User.hasMany(Pointage, { foreignKey: 'created_by', as: 'PointagesCrees' });
+Pointage.belongsTo(User, { foreignKey: 'created_by', as: 'Createur' });
+
+User.hasMany(Pointage, { foreignKey: 'updated_by', as: 'PointagesModifies' });
+Pointage.belongsTo(User, { foreignKey: 'updated_by', as: 'Modificateur' });
+
 module.exports = {
   User,
   Chambre,
@@ -608,5 +622,6 @@ module.exports = {
   NettoyageEspacesPublics,
   CheckLinge,
   NettoyageChambre,
-  Encaissement
+  Encaissement,
+  Pointage
 }; 

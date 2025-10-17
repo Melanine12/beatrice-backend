@@ -50,6 +50,7 @@ const nettoyageEspacesPublicsRoutes = require('./routes/nettoyage-espaces-public
 const checkLingeRoutes = require('./routes/check-linge');
 const nettoyageChambresRoutes = require('./routes/nettoyage-chambres');
 const encaissementsRoutes = require('./routes/encaissements');
+const pointagesRoutes = require('./routes/pointages');
 const offreNotificationService = require('./services/offreNotificationService');
 
 const app = express();
@@ -240,6 +241,7 @@ app.use('/api/nettoyage-espaces-publics', nettoyageEspacesPublicsRoutes);
 app.use('/api/check-linge', checkLingeRoutes);
 app.use('/api/nettoyage-chambres', nettoyageChambresRoutes);
 app.use('/api/encaissements', encaissementsRoutes);
+app.use('/api/pointages', pointagesRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
