@@ -10,7 +10,7 @@ const Achat = require('./Achat');
 const LigneAchat = require('./LigneAchat');
 const MouvementStock = require('./MouvementStock');
 const Entrepot = require('./Entrepot');
-const Paiement = require('./Paiement');
+const PaiementSalaire = require('./PaiementSalaire')(sequelize);
 const Caisse = require('./Caisse');
 const AffectationChambre = require('./AffectationChambre');
 const Demande = require('./Demande');
@@ -43,6 +43,7 @@ const DeviceToken = require('./DeviceToken');
 const NettoyageEspacesPublics = require('./NettoyageEspacesPublics');
 const CheckLinge = require('./CheckLinge')(sequelize);
 const NettoyageChambre = require('./NettoyageChambre')(sequelize);
+const Encaissement = require('./Encaissement')(sequelize);
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -58,23 +59,18 @@ Tache.belongsTo(User, { foreignKey: 'createur_id', as: 'createur' });
 User.hasMany(Tache, { foreignKey: 'assigne_id', as: 'TachesAssigne' });
 Tache.belongsTo(User, { foreignKey: 'assigne_id', as: 'assigne' });
 
-User.hasMany(Paiement, { foreignKey: 'utilisateur_id', as: 'PaiementsUtilisateur' });
-Paiement.belongsTo(User, { foreignKey: 'utilisateur_id', as: 'utilisateur' });
+// Associations pour les paiements de salaires
+User.hasMany(PaiementSalaire, { foreignKey: 'employe_id', as: 'PaiementsSalairesEmploye' });
+PaiementSalaire.belongsTo(User, { foreignKey: 'employe_id', as: 'Employe' });
 
-User.hasMany(Paiement, { foreignKey: 'user_guichet_id', as: 'PaiementsGuichet' });
-Paiement.belongsTo(User, { foreignKey: 'user_guichet_id', as: 'UserGuichet' });
+User.hasMany(PaiementSalaire, { foreignKey: 'valide_par', as: 'PaiementsSalairesValides' });
+PaiementSalaire.belongsTo(User, { foreignKey: 'valide_par', as: 'Validateur' });
 
-// Associations pour les paiements et caisses
-Caisse.hasMany(Paiement, { foreignKey: 'caisse_id', as: 'Paiements' });
-Paiement.belongsTo(Caisse, { foreignKey: 'caisse_id', as: 'caisse' });
+User.hasMany(PaiementSalaire, { foreignKey: 'created_by', as: 'PaiementsSalairesCrees' });
+PaiementSalaire.belongsTo(User, { foreignKey: 'created_by', as: 'Createur' });
 
-// Associations pour les paiements et chambres
-Chambre.hasMany(Paiement, { foreignKey: 'chambre_id', as: 'Paiements' });
-Paiement.belongsTo(Chambre, { foreignKey: 'chambre_id', as: 'chambre' });
-
-// Associations pour les paiements et dépenses
-Depense.hasMany(Paiement, { foreignKey: 'depense_id', as: 'Paiements' });
-Paiement.belongsTo(Depense, { foreignKey: 'depense_id', as: 'depense' });
+User.hasMany(PaiementSalaire, { foreignKey: 'updated_by', as: 'PaiementsSalairesModifies' });
+PaiementSalaire.belongsTo(User, { foreignKey: 'updated_by', as: 'Modificateur' });
 
 // Associations pour les dépenses
 User.hasMany(Depense, { foreignKey: 'demandeur_id', as: 'DepensesDemandeur' });
@@ -557,6 +553,16 @@ NettoyageChambre.belongsTo(User, { foreignKey: 'created_by', as: 'Createur' });
 User.hasMany(NettoyageChambre, { foreignKey: 'updated_by', as: 'NettoyagesChambresModifies' });
 NettoyageChambre.belongsTo(User, { foreignKey: 'updated_by', as: 'Modificateur' });
 
+// Associations pour les encaissements
+User.hasMany(Encaissement, { foreignKey: 'valide_par', as: 'EncaissementsValides' });
+Encaissement.belongsTo(User, { foreignKey: 'valide_par', as: 'Validateur' });
+
+User.hasMany(Encaissement, { foreignKey: 'created_by', as: 'EncaissementsCrees' });
+Encaissement.belongsTo(User, { foreignKey: 'created_by', as: 'Createur' });
+
+User.hasMany(Encaissement, { foreignKey: 'updated_by', as: 'EncaissementsModifies' });
+Encaissement.belongsTo(User, { foreignKey: 'updated_by', as: 'Modificateur' });
+
 module.exports = {
   User,
   Chambre,
@@ -571,7 +577,7 @@ module.exports = {
   Entrepot,
   Fournisseur,
   Depense,
-  Paiement,
+  PaiementSalaire,
   Caisse,
   Demande,
   Departement,
@@ -601,5 +607,6 @@ module.exports = {
   DeviceToken,
   NettoyageEspacesPublics,
   CheckLinge,
-  NettoyageChambre
+  NettoyageChambre,
+  Encaissement
 }; 

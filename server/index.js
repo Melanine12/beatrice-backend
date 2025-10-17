@@ -49,6 +49,7 @@ const deviceTokensRoutes = require('./routes/deviceTokens');
 const nettoyageEspacesPublicsRoutes = require('./routes/nettoyage-espaces-publics');
 const checkLingeRoutes = require('./routes/check-linge');
 const nettoyageChambresRoutes = require('./routes/nettoyage-chambres');
+const encaissementsRoutes = require('./routes/encaissements');
 const offreNotificationService = require('./services/offreNotificationService');
 
 const app = express();
@@ -211,7 +212,7 @@ app.use('/api/achats', achatRoutes);
 app.use('/api/mouvements-stock', mouvementStockRoutes);
 app.use('/api/entrepots', entrepotRoutes);
 app.use('/api/caisses', caisseRoutes);
-app.use('/api/paiements', paiementsRoutes);
+app.use('/api/paiements-salaires', paiementsRoutes);
 app.use('/api/demandes', demandesRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/demandes-affectation', demandesAffectationRoutes);
@@ -238,6 +239,7 @@ app.use('/api/device-tokens', deviceTokensRoutes);
 app.use('/api/nettoyage-espaces-publics', nettoyageEspacesPublicsRoutes);
 app.use('/api/check-linge', checkLingeRoutes);
 app.use('/api/nettoyage-chambres', nettoyageChambresRoutes);
+app.use('/api/encaissements', encaissementsRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
