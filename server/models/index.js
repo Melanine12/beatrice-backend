@@ -1,4 +1,5 @@
 const User = require('./User');
+const Employe = require('./Employe');
 const Chambre = require('./Chambre');
 const Problematique = require('./Problematique');
 const ProblematiqueImage = require('./ProblematiqueImage');
@@ -61,8 +62,8 @@ User.hasMany(Tache, { foreignKey: 'assigne_id', as: 'TachesAssigne' });
 Tache.belongsTo(User, { foreignKey: 'assigne_id', as: 'assigne' });
 
 // Associations pour les paiements de salaires
-User.hasMany(PaiementSalaire, { foreignKey: 'employe_id', as: 'PaiementsSalairesEmploye' });
-PaiementSalaire.belongsTo(User, { foreignKey: 'employe_id', as: 'Employe' });
+Employe.hasMany(PaiementSalaire, { foreignKey: 'employe_id', as: 'PaiementsSalairesEmploye' });
+PaiementSalaire.belongsTo(Employe, { foreignKey: 'employe_id', as: 'Employe' });
 
 User.hasMany(PaiementSalaire, { foreignKey: 'valide_par', as: 'PaiementsSalairesValides' });
 PaiementSalaire.belongsTo(User, { foreignKey: 'valide_par', as: 'Validateur' });

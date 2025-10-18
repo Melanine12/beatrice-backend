@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
-const { PaiementSalaire, User } = require('../models');
+const { PaiementSalaire, User, Employe } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
@@ -56,9 +56,9 @@ router.get('/', [
       where: whereClause,
       include: [
         {
-          model: User,
+          model: Employe,
           as: 'Employe',
-          attributes: ['id', 'nom', 'prenom', 'email', 'role']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel', 'poste']
         },
         {
           model: User,
@@ -119,7 +119,7 @@ router.get('/employe/:id', [
     const offset = (page - 1) * limit;
 
     // Vérifier que l'employé existe
-    const employe = await User.findByPk(id);
+    const employe = await Employe.findByPk(id);
     if (!employe) {
       return res.status(404).json({ 
         error: 'Employee not found',
@@ -135,6 +135,11 @@ router.get('/employe/:id', [
     const { count, rows: paiements } = await PaiementSalaire.findAndCountAll({
       where: whereClause,
       include: [
+        {
+          model: Employe,
+          as: 'Employe',
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel', 'poste']
+        },
         {
           model: User,
           as: 'Validateur',
@@ -156,10 +161,10 @@ router.get('/employe/:id', [
       data: paiements,
       employe: {
         id: employe.id,
-        nom: employe.nom,
-        prenom: employe.prenom,
-        email: employe.email,
-        role: employe.role
+        nom: employe.nom_famille,
+        prenom: employe.prenoms,
+        email: employe.email_personnel,
+        poste: employe.poste
       },
       pagination: {
         total: count,
