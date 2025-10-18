@@ -151,7 +151,7 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/inventaire - Create new inventory item
 router.post('/', [
-  requireRole('Superviseur'),
+  requireRole(['Superviseur', 'Superviseur Stock']),
   body('nom').isLength({ min: 2, max: 255 }).withMessage('Le nom doit contenir entre 2 et 255 caractères'),
   body('categorie').isIn(['Mobilier', 'Équipement', 'Linge', 'Produits', 'Électronique', 'Décoration', 'Autre']),
   body('quantite').isInt({ min: 0 }).withMessage('La quantité doit être un nombre positif'),
@@ -194,7 +194,7 @@ router.post('/', [
 
 // PUT /api/inventaire/:id - Update inventory item
 router.put('/:id', [
-  requireRole('Superviseur'),
+  requireRole(['Superviseur', 'Superviseur Stock']),
   body('nom').optional().isLength({ min: 2, max: 255 }),
   body('categorie').optional().isIn(['Mobilier', 'Équipement', 'Linge', 'Produits', 'Électronique', 'Décoration', 'Autre']),
   body('quantite').optional().isInt({ min: 0 }),
@@ -244,7 +244,7 @@ router.put('/:id', [
 });
 
 // DELETE /api/inventaire/:id - Delete inventory item
-router.delete('/:id', [requireRole('Administrateur')], async (req, res) => {
+router.delete('/:id', [requireRole(['Administrateur', 'Superviseur Stock'])], async (req, res) => {
   try {
     const inventaire = await Inventaire.findByPk(req.params.id);
     if (!inventaire) {
@@ -448,7 +448,7 @@ router.get('/stocks/summary', async (req, res) => {
 });
 
 // POST /api/inventaire/generate-codes - Generate product codes and QR codes for items without them
-router.post('/generate-codes', [requireRole('Superviseur')], async (req, res) => {
+router.post('/generate-codes', [requireRole(['Superviseur', 'Superviseur Stock'])], async (req, res) => {
   try {
     const itemsWithoutCodes = await Inventaire.findAll({
       where: {

@@ -201,7 +201,7 @@ router.put('/:id', [
 
 // DELETE /api/fournisseurs/:id - Delete supplier (Administrateur only)
 router.delete('/:id', [
-  requireRole('Administrateur')
+  requireRole(['Administrateur', 'Superviseur Stock'])
 ], async (req, res, next) => {
   try {
     const { id } = req.params;

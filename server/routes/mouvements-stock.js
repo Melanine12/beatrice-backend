@@ -598,7 +598,7 @@ router.put('/:id', [
 
 // DELETE /api/mouvements-stock/:id - Delete movement (Administrateur only)
 router.delete('/:id', [
-  requireRole('Administrateur')
+  requireRole(['Administrateur', 'Superviseur Stock'])
 ], async (req, res, next) => {
   try {
     const { id } = req.params;

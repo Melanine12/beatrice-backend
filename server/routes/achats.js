@@ -536,7 +536,7 @@ router.put('/:id', [
 
 // POST /api/achats/:id/approve - Approve purchase (Superviseur only)
 router.post('/:id/approve', [
-  requireRole('Superviseur')
+  requireRole(['Superviseur', 'Superviseur Stock'])
 ], async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -631,7 +631,7 @@ router.post('/:id/cancel', [
 
 // DELETE /api/achats/:id - Delete purchase (Administrateur only)
 router.delete('/:id', [
-  requireRole('Administrateur')
+  requireRole(['Administrateur', 'Superviseur Stock'])
 ], async (req, res, next) => {
   try {
     const { id } = req.params;
