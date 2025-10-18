@@ -39,7 +39,6 @@ const CandidatureOffre = require('./CandidatureOffre');
 const Dependant = require('./Dependant');
 const Sanction = require('./Sanction');
 const Gratification = require('./Gratification');
-const Employe = require('./Employe');
 const DeviceToken = require('./DeviceToken');
 const NettoyageEspacesPublics = require('./NettoyageEspacesPublics');
 const CheckLinge = require('./CheckLinge')(sequelize);
