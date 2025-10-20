@@ -122,7 +122,7 @@ module.exports = (sequelize) => {
   // Définir les associations
   Pointage.associate = (models) => {
     // Association avec l'employé
-    Pointage.belongsTo(models.User, {
+    Pointage.belongsTo(models.Employe, {
       foreignKey: 'employe_id',
       as: 'Employe',
       onDelete: 'CASCADE',
@@ -188,9 +188,9 @@ module.exports = (sequelize) => {
       where: whereClause,
       include: [
         {
-          model: sequelize.models.User,
+          model: sequelize.models.Employe,
           as: 'Employe',
-          attributes: ['id', 'nom', 'prenom', 'email', 'role']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel', 'poste']
         },
         {
           model: sequelize.models.User,
@@ -232,9 +232,9 @@ module.exports = (sequelize) => {
       ],
       include: [
         {
-          model: sequelize.models.User,
+          model: sequelize.models.Employe,
           as: 'Employe',
-          attributes: ['id', 'nom', 'prenom', 'email']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel']
         }
       ],
       group: ['employe_id'],

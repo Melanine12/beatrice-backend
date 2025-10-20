@@ -565,8 +565,8 @@ User.hasMany(Encaissement, { foreignKey: 'updated_by', as: 'EncaissementsModifie
 Encaissement.belongsTo(User, { foreignKey: 'updated_by', as: 'Modificateur' });
 
 // Associations pour les pointages
-User.hasMany(Pointage, { foreignKey: 'employe_id', as: 'PointagesEmploye' });
-Pointage.belongsTo(User, { foreignKey: 'employe_id', as: 'Employe' });
+Employe.hasMany(Pointage, { foreignKey: 'employe_id', as: 'PointagesEmploye' });
+Pointage.belongsTo(Employe, { foreignKey: 'employe_id', as: 'Employe' });
 
 User.hasMany(Pointage, { foreignKey: 'valide_par', as: 'PointagesValides' });
 Pointage.belongsTo(User, { foreignKey: 'valide_par', as: 'Validateur' });

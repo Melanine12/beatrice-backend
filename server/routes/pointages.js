@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
-const { Pointage, User } = require('../models');
+const { Pointage, User, Employe } = require('../models');
 const { Op } = require('sequelize');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const router = express.Router();
@@ -56,9 +56,9 @@ router.get('/', [
       where: whereClause,
       include: [
         {
-          model: User,
+          model: Employe,
           as: 'Employe',
-          attributes: ['id', 'nom', 'prenom', 'email', 'role']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel', 'poste']
         },
         {
           model: User,
@@ -203,7 +203,7 @@ router.post('/', [
     const pointageData = req.body;
     
     // Vérifier que l'employé existe
-    const employe = await User.findByPk(pointageData.employe_id);
+    const employe = await Employe.findByPk(pointageData.employe_id);
     if (!employe) {
       return res.status(404).json({ 
         error: 'Employee not found',
@@ -230,9 +230,9 @@ router.post('/', [
       pointage = await Pointage.findByPk(existingPointage.id, {
         include: [
           {
-            model: User,
+            model: Employe,
             as: 'Employe',
-            attributes: ['id', 'nom', 'prenom', 'email', 'role']
+            attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel', 'poste']
           },
           {
             model: User,
@@ -257,9 +257,9 @@ router.post('/', [
       pointage = await Pointage.findByPk(pointage.id, {
         include: [
           {
-            model: User,
+            model: Employe,
             as: 'Employe',
-            attributes: ['id', 'nom', 'prenom', 'email', 'role']
+            attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel', 'poste']
           },
           {
             model: User,
@@ -330,9 +330,9 @@ router.put('/:id', [
     const updatedPointage = await Pointage.findByPk(id, {
       include: [
         {
-          model: User,
+          model: Employe,
           as: 'Employe',
-          attributes: ['id', 'nom', 'prenom', 'email', 'role']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel', 'poste']
         },
         {
           model: User,
@@ -441,9 +441,9 @@ router.post('/valider/:id', [
     const validatedPointage = await Pointage.findByPk(id, {
       include: [
         {
-          model: User,
+          model: Employe,
           as: 'Employe',
-          attributes: ['id', 'nom', 'prenom', 'email', 'role']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel', 'poste']
         },
         {
           model: User,
