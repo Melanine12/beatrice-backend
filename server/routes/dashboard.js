@@ -6,6 +6,11 @@ const Tache = require('../models/Tache');
 const Depense = require('../models/Depense');
 const User = require('../models/User');
 const AffectationChambre = require('../models/AffectationChambre');
+const CheckLinge = require('../models/CheckLinge');
+const BonMenage = require('../models/BonMenage');
+const Pointage = require('../models/Pointage');
+const Inventaire = require('../models/Inventaire');
+const Demande = require('../models/Demande');
 
 const router = express.Router();
 
@@ -24,7 +29,8 @@ router.get('/stats', async (req, res) => {
       taskStats,
       expenseStats,
       userStats,
-      assignmentStats
+      assignmentStats,
+      auditorStats
     ] = await Promise.all([
       // Room statistics
       (async () => {
@@ -143,6 +149,84 @@ router.get('/stats', async (req, res) => {
           total: totalAssignments,
           today: todayAssignments
         };
+      })(),
+
+      // Auditor statistics (for users with role "Auditeur")
+      (async () => {
+        console.log('🔍 Computing auditor statistics...');
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+        // Check linges mis à jour du jour
+        const checkLingesToday = await CheckLinge.count({
+          where: {
+            updated_at: {
+              [Op.between]: [startOfDay, endOfDay]
+            }
+          }
+        });
+
+        // Bons de prélèvement approuvés du jour
+        const bonsPrelevementApproved = await BonMenage.count({
+          where: {
+            etat_chambre_apres_entretien: 'Parfait',
+            date_creation: {
+              [Op.between]: [startOfDay, endOfDay]
+            }
+          }
+        });
+
+        // Bons de demandes approuvés du jour
+        const bonsDemandesApproved = await Demande.count({
+          where: {
+            statut: 'Approuvée',
+            date_creation: {
+              [Op.between]: [startOfDay, endOfDay]
+            }
+          }
+        });
+
+        // Employés présents du jour
+        const employesPresents = await Pointage.count({
+          where: {
+            present: true,
+            date_pointage: {
+              [Op.between]: [startOfDay, endOfDay]
+            }
+          }
+        });
+
+        // Articles en rupture de stock
+        const articlesRuptureStock = await Inventaire.count({
+          where: {
+            quantite_stock: {
+              [Op.lte]: 0
+            }
+          }
+        });
+
+        // Chambres libres et occupées du jour
+        const chambresLibres = await Chambre.count({
+          where: { statut: 'Libre' }
+        });
+        
+        const chambresOccupees = await Chambre.count({
+          where: { statut: 'Occupée' }
+        });
+
+        const auditorStats = {
+          checkLingesToday,
+          bonsPrelevementApproved,
+          bonsDemandesApproved,
+          employesPresents,
+          articlesRuptureStock,
+          chambresLibres,
+          chambresOccupees
+        };
+        
+        console.log('📊 Auditor stats computed:', auditorStats);
+        return auditorStats;
       })()
     ]);
 
@@ -174,7 +258,7 @@ router.get('/stats', async (req, res) => {
       systemHealth.expenses.score
     ) / 4;
 
-    res.json({
+    const response = {
       overview: {
         rooms: roomStats,
         issues: issueStats,
@@ -183,10 +267,14 @@ router.get('/stats', async (req, res) => {
         users: userStats,
         assignments: assignmentStats
       },
+      auditorStats,
       systemHealth,
       overallScore: overallScore.toFixed(2),
       lastUpdated: new Date().toISOString()
-    });
+    };
+    
+    console.log('🚀 Dashboard response includes auditorStats:', !!response.auditorStats);
+    res.json(response);
 
   } catch (error) {
     console.error('Get dashboard stats error:', error);

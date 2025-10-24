@@ -83,3 +83,4 @@ async function fixPointagesForeignKey() {
 
 // Exécuter la correction
 fixPointagesForeignKey();
+

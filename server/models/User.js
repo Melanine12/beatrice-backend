@@ -43,7 +43,7 @@ const User = sequelize.define('User', {
     }
   },
   role: {
-    type: DataTypes.ENUM('Guichetier', 'Agent', 'Web Master', 'Superviseur Stock', 'Superviseur Housing', 'Superviseur Finance', 'Superviseur RH', 'Superviseur', 'Administrateur', 'Patron'),
+    type: DataTypes.ENUM('Guichetier', 'Agent', 'Web Master', 'Superviseur Stock', 'Superviseur Housing', 'Superviseur Finance', 'Superviseur RH', 'Superviseur', 'Administrateur', 'Patron', 'Auditeur'),
     allowNull: false,
     defaultValue: 'Agent'
   },
@@ -118,8 +118,9 @@ User.prototype.hasPermission = function(requiredRole) {
     'Superviseur Finance': 6,
     'Superviseur RH': 7,
     'Superviseur': 8,
-    'Administrateur': 9,
-    'Patron': 10
+    'Auditeur': 9,
+    'Administrateur': 10,
+    'Patron': 11
   };
   
   return roleHierarchy[this.role] >= roleHierarchy[requiredRole];

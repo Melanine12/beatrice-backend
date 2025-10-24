@@ -16,7 +16,7 @@ router.get('/', [
     'Agent Chambre', 'Superviseur Resto', 'Superviseur Buanderie', 
     'Superviseur Housing', 'Superviseur RH', 'Superviseur Comptable', 
     'Web Master', 'Superviseur Finance', 'Agent', 'Superviseur', 
-    'Administrateur', 'Patron', 'Guichetier', 'Superviseur Stock'
+    'Administrateur', 'Patron', 'Guichetier', 'Superviseur Stock', 'Auditeur'
   ]),
   query('actif').optional().isBoolean(),
   query('departement_id').optional().isInt({ min: 1 }),
@@ -178,7 +178,7 @@ router.post('/', [
     'Agent Chambre', 'Superviseur Resto', 'Superviseur Buanderie', 
     'Superviseur Housing', 'Superviseur RH', 'Superviseur Comptable', 
     'Web Master', 'Superviseur Finance', 'Agent', 'Superviseur', 
-    'Administrateur', 'Patron', 'Guichetier', 'Superviseur Stock'
+    'Administrateur', 'Patron', 'Guichetier', 'Superviseur Stock', 'Auditeur'
   ]),
   body('telephone').optional().isLength({ max: 20 }),
   body('departement_id').optional().custom((value) => {
