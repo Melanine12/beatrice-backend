@@ -661,8 +661,8 @@ router.get('/stats/overview', async (req, res) => {
       attributes: [
         'type',
         [Tache.sequelize.fn('COUNT', Tache.sequelize.col('id')), 'count'],
-        [Tache.sequelize.fn('COUNT', Tache.sequelize.fn('CASE', { when: { statut: 'Terminée' }, then: 1 })), 'completed'],
-        [Tache.sequelize.fn('COUNT', Tache.sequelize.fn('CASE', { when: { priorite: 'Urgente' }, then: 1 })), 'urgent']
+        [Tache.sequelize.fn('COUNT', Tache.sequelize.literal("CASE WHEN statut = 'Terminée' THEN 1 END")), 'completed'],
+        [Tache.sequelize.fn('COUNT', Tache.sequelize.literal("CASE WHEN priorite = 'Urgente' THEN 1 END")), 'urgent']
       ],
       group: ['type']
     });
@@ -689,10 +689,7 @@ router.get('/stats/overview', async (req, res) => {
     const avgCompletionTime = await Tache.findAll({
       attributes: [
         [Tache.sequelize.fn('AVG', 
-          Tache.sequelize.fn('TIMESTAMPDIFF', 'HOUR', 
-            Tache.sequelize.col('date_creation'), 
-            Tache.sequelize.col('date_fin')
-          )
+          Tache.sequelize.literal('TIMESTAMPDIFF(HOUR, date_creation, date_fin)')
         ), 'avgHours']
       ],
       where: {

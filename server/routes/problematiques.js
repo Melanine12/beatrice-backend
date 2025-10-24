@@ -1048,10 +1048,7 @@ router.get('/stats/overview', async (req, res) => {
     const avgResolutionTime = await Problematique.findAll({
       attributes: [
         [Problematique.sequelize.fn('AVG', 
-          Problematique.sequelize.fn('TIMESTAMPDIFF', 'HOUR', 
-            Problematique.sequelize.col('date_creation'), 
-            Problematique.sequelize.col('date_resolution')
-          )
+          Problematique.sequelize.literal('TIMESTAMPDIFF(HOUR, date_creation, date_resolution)')
         ), 'avgHours']
       ],
       where: {

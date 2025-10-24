@@ -195,8 +195,8 @@ router.get('/stats', async (req, res) => {
         try {
           bonsDemandesApproved = await Demande.count({
             where: {
-              statut: 'Approuvée',
-              date_creation: {
+              statut: 'approuvee',
+              date_demande: {
                 [Op.between]: [startOfDay, endOfDay]
               }
             }
@@ -227,7 +227,7 @@ router.get('/stats', async (req, res) => {
         try {
           articlesRuptureStock = await Inventaire.count({
             where: {
-              quantite_stock: {
+              quantite: {
                 [Op.lte]: 0
               }
             }
