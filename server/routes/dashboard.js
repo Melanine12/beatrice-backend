@@ -1,14 +1,15 @@
 const express = require('express');
 const { authenticateToken } = require('../middleware/auth');
+const { sequelize } = require('../config/database');
 const Chambre = require('../models/Chambre');
 const Problematique = require('../models/Problematique');
 const Tache = require('../models/Tache');
 const Depense = require('../models/Depense');
 const User = require('../models/User');
 const AffectationChambre = require('../models/AffectationChambre');
-const CheckLinge = require('../models/CheckLinge');
+const CheckLinge = require('../models/CheckLinge')(sequelize);
 const BonMenage = require('../models/BonMenage');
-const Pointage = require('../models/Pointage');
+const Pointage = require('../models/Pointage')(sequelize);
 const Inventaire = require('../models/Inventaire');
 const Demande = require('../models/Demande');
 
@@ -159,61 +160,92 @@ router.get('/stats', async (req, res) => {
         const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
         // Check linges mis à jour du jour
-        const checkLingesToday = await CheckLinge.count({
-          where: {
-            updated_at: {
-              [Op.between]: [startOfDay, endOfDay]
+        let checkLingesToday = 0;
+        try {
+          checkLingesToday = await CheckLinge.count({
+            where: {
+              updated_at: {
+                [Op.between]: [startOfDay, endOfDay]
+              }
             }
-          }
-        });
+          });
+        } catch (error) {
+          console.log('⚠️  Erreur CheckLinge:', error.message);
+        }
 
         // Bons de prélèvement approuvés du jour
-        const bonsPrelevementApproved = await BonMenage.count({
-          where: {
-            etat_chambre_apres_entretien: 'Parfait',
-            date_creation: {
-              [Op.between]: [startOfDay, endOfDay]
+        let bonsPrelevementApproved = 0;
+        try {
+          bonsPrelevementApproved = await BonMenage.count({
+            where: {
+              etat_chambre_apres_entretien: 'Parfait',
+              date_creation: {
+                [Op.between]: [startOfDay, endOfDay]
+              }
             }
-          }
-        });
+          });
+        } catch (error) {
+          console.log('⚠️  Erreur BonMenage:', error.message);
+        }
 
         // Bons de demandes approuvés du jour
-        const bonsDemandesApproved = await Demande.count({
-          where: {
-            statut: 'Approuvée',
-            date_creation: {
-              [Op.between]: [startOfDay, endOfDay]
+        let bonsDemandesApproved = 0;
+        try {
+          bonsDemandesApproved = await Demande.count({
+            where: {
+              statut: 'Approuvée',
+              date_creation: {
+                [Op.between]: [startOfDay, endOfDay]
+              }
             }
-          }
-        });
+          });
+        } catch (error) {
+          console.log('⚠️  Erreur Demande:', error.message);
+        }
 
         // Employés présents du jour
-        const employesPresents = await Pointage.count({
-          where: {
-            present: true,
-            date_pointage: {
-              [Op.between]: [startOfDay, endOfDay]
+        let employesPresents = 0;
+        try {
+          employesPresents = await Pointage.count({
+            where: {
+              present: true,
+              date_pointage: {
+                [Op.between]: [startOfDay, endOfDay]
+              }
             }
-          }
-        });
+          });
+        } catch (error) {
+          console.log('⚠️  Erreur Pointage:', error.message);
+        }
 
         // Articles en rupture de stock
-        const articlesRuptureStock = await Inventaire.count({
-          where: {
-            quantite_stock: {
-              [Op.lte]: 0
+        let articlesRuptureStock = 0;
+        try {
+          articlesRuptureStock = await Inventaire.count({
+            where: {
+              quantite_stock: {
+                [Op.lte]: 0
+              }
             }
-          }
-        });
+          });
+        } catch (error) {
+          console.log('⚠️  Erreur Inventaire:', error.message);
+        }
 
         // Chambres libres et occupées du jour
-        const chambresLibres = await Chambre.count({
-          where: { statut: 'Libre' }
-        });
-        
-        const chambresOccupees = await Chambre.count({
-          where: { statut: 'Occupée' }
-        });
+        let chambresLibres = 0;
+        let chambresOccupees = 0;
+        try {
+          chambresLibres = await Chambre.count({
+            where: { statut: 'Libre' }
+          });
+          
+          chambresOccupees = await Chambre.count({
+            where: { statut: 'Occupée' }
+          });
+        } catch (error) {
+          console.log('⚠️  Erreur Chambre:', error.message);
+        }
 
         const auditorStats = {
           checkLingesToday,
