@@ -176,6 +176,7 @@ router.get('/stats', async (req, res) => {
         // Bons de prélèvement approuvés du jour
         let bonsPrelevementApproved = 0;
         try {
+          const todayDate = new Date().toISOString().split('T')[0];
           bonsPrelevementApproved = await BonMenage.count({
             where: {
               etat_chambre_apres_entretien: 'Parfait',
@@ -184,6 +185,7 @@ router.get('/stats', async (req, res) => {
               }
             }
           });
+          console.log('📊 Bons prélèvement approuvés:', bonsPrelevementApproved);
         } catch (error) {
           console.log('⚠️  Erreur BonMenage:', error.message);
         }
@@ -199,6 +201,7 @@ router.get('/stats', async (req, res) => {
               }
             }
           });
+          console.log('📊 Bons demandes approuvés:', bonsDemandesApproved);
         } catch (error) {
           console.log('⚠️  Erreur Demande:', error.message);
         }
@@ -206,14 +209,15 @@ router.get('/stats', async (req, res) => {
         // Employés présents du jour
         let employesPresents = 0;
         try {
+          // La table pointages stocke seulement la date (sans heure)
+          const todayDate = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
           employesPresents = await Pointage.count({
             where: {
               present: true,
-              date_pointage: {
-                [Op.between]: [startOfDay, endOfDay]
-              }
+              date_pointage: todayDate
             }
           });
+          console.log('📊 Employés présents aujourd\'hui:', employesPresents, 'pour la date:', todayDate);
         } catch (error) {
           console.log('⚠️  Erreur Pointage:', error.message);
         }
