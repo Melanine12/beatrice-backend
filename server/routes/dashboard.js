@@ -244,9 +244,12 @@ router.get('/stats', async (req, res) => {
             where: { statut: 'Libre' }
           });
           
+          // Corriger le statut : "Occupé" au lieu de "Occupée"
           chambresOccupees = await Chambre.count({
-            where: { statut: 'Occupée' }
+            where: { statut: 'Occupé' }
           });
+          
+          console.log('📊 Chambres - Libres:', chambresLibres, 'Occupées:', chambresOccupees);
         } catch (error) {
           console.log('⚠️  Erreur Chambre:', error.message);
         }
