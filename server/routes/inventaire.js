@@ -47,10 +47,12 @@ router.get('/', [
   query('statut').optional(),
   query('chambre_id').optional(),
   query('responsable_id').optional(),
-  query('search').optional()
+  query('search').optional(),
+  query('page').optional().isInt({ min: 1 }),
+  query('limit').optional().isInt({ min: 1, max: 100 })
 ], async (req, res) => {
   try {
-    const { categorie, statut, chambre_id, responsable_id, search } = req.query;
+    const { categorie, statut, chambre_id, responsable_id, search, page = 1, limit = 10 } = req.query;
     
     const whereClause = {};
     if (categorie) whereClause.categorie = categorie;
@@ -67,6 +69,14 @@ router.get('/', [
         { sous_categorie: { [Op.like]: `%${search}%` } }
       ];
     }
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Count total items
+    const totalItems = await Inventaire.count({ where: whereClause });
+    const totalPages = Math.ceil(totalItems / limitNum);
 
     const inventaire = await Inventaire.findAll({
       where: whereClause,
@@ -87,13 +97,18 @@ router.get('/', [
           attributes: ['id', 'nom', 'type', 'ville']
         }
       ],
-      order: [['nom', 'ASC']]
+      order: [['nom', 'ASC']],
+      limit: limitNum,
+      offset: offset
     });
 
     res.json({
       success: true,
       data: inventaire,
-      count: inventaire.length
+      currentPage: pageNum,
+      totalPages: totalPages,
+      totalItems: totalItems,
+      itemsPerPage: limitNum
     });
   } catch (error) {
     console.error('Error fetching inventory:', error);
