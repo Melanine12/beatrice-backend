@@ -318,8 +318,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Approuver/Rejeter une demande de fonds (superviseur uniquement)
-router.put('/:id/status', authenticateToken, requireRole(['Superviseur', 'Superviseur Finance']), async (req, res) => {
+// Approuver/Rejeter une demande de fonds (superviseur et auditeur uniquement)
+router.put('/:id/status', authenticateToken, requireRole(['Superviseur', 'Superviseur Finance', 'Auditeur']), async (req, res) => {
   try {
     console.log('🔐 Tentative de changement de statut - Utilisateur:', {
       id: req.user.id,
