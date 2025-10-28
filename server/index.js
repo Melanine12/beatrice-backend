@@ -53,6 +53,7 @@ const nettoyageChambresRoutes = require('./routes/nettoyage-chambres');
 const pointagesRoutes = require('./routes/pointages');
 const presencesDashboardRoutes = require('./routes/presences-dashboard');
 const reportsRoutes = require('./routes/reports');
+const menusRoutes = require('./routes/menus');
 const offreNotificationService = require('./services/offreNotificationService');
 
 const app = express();
@@ -247,6 +248,7 @@ app.use('/api/nettoyage-chambres', nettoyageChambresRoutes);
 app.use('/api/pointages', pointagesRoutes);
 app.use('/api/presences-dashboard', presencesDashboardRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/menus', menusRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
