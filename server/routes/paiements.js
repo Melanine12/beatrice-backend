@@ -462,4 +462,198 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// GET /api/paiements/reports/financial - Get comprehensive financial reports
+router.get('/reports/financial', async (req, res) => {
+  try {
+    const { Op } = require('sequelize');
+    const { sequelize } = require('../config/database');
+    
+    // Get current year data
+    const currentYear = new Date().getFullYear();
+    const startOfYear = new Date(currentYear, 0, 1);
+    const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
+
+    // Get data from tbl_encaissements (payments/revenue)
+    const [encaissementsResult] = await sequelize.query(`
+      SELECT 
+        SUM(montant) as totalRevenue,
+        COUNT(*) as totalPayments,
+        devise
+      FROM tbl_encaissements 
+      WHERE statut = 'Validé' 
+        AND DATE(date_paiement) BETWEEN ? AND ?
+      GROUP BY devise
+    `, {
+      replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get data from tbl_depenses (expenses)
+    const [depensesResult] = await sequelize.query(`
+      SELECT 
+        SUM(montant) as totalExpenses,
+        COUNT(*) as totalExpenseCount,
+        devise
+      FROM tbl_depenses 
+      WHERE statut IN ('Approuvée', 'Payée')
+        AND DATE(date_depense) BETWEEN ? AND ?
+      GROUP BY devise
+    `, {
+      replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get recent payments (last 30 days)
+    const recentPayments = await sequelize.query(`
+      SELECT 
+        e.*,
+        c.nom as caisse_nom,
+        c.devise as caisse_devise,
+        u.prenom,
+        u.nom
+      FROM tbl_encaissements e
+      LEFT JOIN tbl_caisses c ON e.encaissement_caisse_id = c.id
+      LEFT JOIN tbl_users u ON e.user_guichet_id = u.id
+      WHERE e.date_paiement >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      ORDER BY e.date_paiement DESC
+      LIMIT 100
+    `, {
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get cash registers
+    const caisses = await sequelize.query(`
+      SELECT id, nom, devise, solde_actuel as solde
+      FROM tbl_caisses 
+      WHERE actif = 1
+    `, {
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Calculate totals
+    const totalRevenue = encaissementsResult?.totalRevenue || 0;
+    const totalExpenses = depensesResult?.totalExpenses || 0;
+    const netProfit = totalRevenue - totalExpenses;
+    const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100) : 0;
+
+    // Calculate revenue by currency
+    const revenueByCurrency = await sequelize.query(`
+      SELECT 
+        devise,
+        SUM(montant) as total,
+        COUNT(*) as count
+      FROM tbl_encaissements 
+      WHERE statut = 'Validé' 
+        AND DATE(date_paiement) BETWEEN ? AND ?
+      GROUP BY devise
+    `, {
+      replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Calculate expenses by currency
+    const expensesByCurrency = await sequelize.query(`
+      SELECT 
+        devise,
+        SUM(montant) as total,
+        COUNT(*) as count
+      FROM tbl_depenses 
+      WHERE statut IN ('Approuvée', 'Payée')
+        AND DATE(date_depense) BETWEEN ? AND ?
+      GROUP BY devise
+    `, {
+      replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Payment stats by status
+    const paymentStatsByStatus = await sequelize.query(`
+      SELECT 
+        statut as status,
+        COUNT(*) as count,
+        SUM(montant) as total
+      FROM tbl_encaissements 
+      WHERE DATE(date_paiement) BETWEEN ? AND ?
+      GROUP BY statut
+    `, {
+      replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Payment stats by type
+    const paymentStatsByType = await sequelize.query(`
+      SELECT 
+        type_paiement as type,
+        COUNT(*) as count,
+        SUM(montant) as total
+      FROM tbl_encaissements 
+      WHERE statut = 'Validé' 
+        AND DATE(date_paiement) BETWEEN ? AND ?
+      GROUP BY type_paiement
+    `, {
+      replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Expense breakdown by category
+    const expenseBreakdown = await sequelize.query(`
+      SELECT 
+        COALESCE(categorie, 'Non catégorisé') as category,
+        SUM(montant) as amount,
+        COUNT(*) as count
+      FROM tbl_depenses 
+      WHERE statut IN ('Approuvée', 'Payée')
+        AND DATE(date_depense) BETWEEN ? AND ?
+      GROUP BY categorie
+      ORDER BY amount DESC
+    `, {
+      replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Calculate percentages for expense breakdown
+    const totalExpenseAmount = expenseBreakdown.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+    const expenseBreakdownWithPercentages = expenseBreakdown.map(item => ({
+      category: item.category,
+      amount: parseFloat(item.amount),
+      count: parseInt(item.count),
+      percentage: totalExpenseAmount > 0 ? ((parseFloat(item.amount) / totalExpenseAmount) * 100).toFixed(1) : 0
+    }));
+
+    // Calculate total cash balance
+    const totalCashBalance = caisses.reduce((sum, caisse) => sum + parseFloat(caisse.solde || 0), 0);
+
+    res.json({
+      success: true,
+      data: {
+        totalRevenue,
+        totalExpenses,
+        netProfit,
+        profitMargin,
+        monthlyRevenue: [], // Can be implemented later
+        monthlyExpenses: [], // Can be implemented later
+        monthlyDataByCurrency: {}, // Can be implemented later
+        topRevenueSources: [], // Can be implemented later
+        expenseBreakdown: expenseBreakdownWithPercentages,
+        totalCashBalance,
+        caisses,
+        paymentStatsByStatus,
+        paymentStatsByType,
+        recentPayments,
+        revenueByCurrency,
+        expensesByCurrency,
+        totalAllTimeRevenueByCurrency: {} // Can be implemented later
+      }
+    });
+
+  } catch (error) {
+    console.error('Get financial reports error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to get financial reports',
+      message: 'Erreur lors de la récupération des rapports financiers'
+    });
+  }
+});
+
 module.exports = router; 
