@@ -1,233 +1,125 @@
 const express = require('express');
-const { body, query, param, validationResult } = require('express-validator');
-const { Encaissement, User } = require('../models');
+const { body, validationResult } = require('express-validator');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { sequelize } = require('../config/database');
 
 const router = express.Router();
 
-// Middleware d'authentification pour toutes les routes
+// Appliquer l'authentification à toutes les routes
 router.use(authenticateToken);
 
-// Middleware de validation des requêtes
-const validateRequest = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Erreur de validation',
-      errors: errors.array()
-    });
-  }
-  next();
-};
-
-// Fonction pour générer une référence unique
-const generateReference = () => {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `ENC-${timestamp}-${random}`;
-};
-
-// GET /api/encaissements - Récupérer tous les encaissements avec filtres
-router.get('/', [
-  query('statut').optional().isIn(['En attente', 'Validé', 'Rejeté', 'Annulé']),
-  query('type_paiement').optional().isIn(['Espèces', 'Carte bancaire', 'Chèque', 'Virement', 'Mobile Money', 'Autre']),
-  query('date_debut').optional().isISO8601().toDate(),
-  query('date_fin').optional().isISO8601().toDate(),
-  query('beneficiaire').optional().isString(),
-  query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 })
-], validateRequest, async (req, res) => {
+// GET /api/encaissements - Récupérer tous les encaissements
+router.get('/', async (req, res) => {
   try {
-    const {
-      statut,
-      type_paiement,
-      date_debut,
-      date_fin,
-      beneficiaire,
-      page = 1,
-      limit = 10
-    } = req.query;
-
-    const whereClause = {};
-
-    if (statut) {
-      whereClause.statut = statut;
-    }
-
-    if (type_paiement) {
-      whereClause.type_paiement = type_paiement;
-    }
-
-    if (beneficiaire) {
-      whereClause.beneficiaire = { [require('sequelize').Op.like]: `%${beneficiaire}%` };
-    }
-
-    if (date_debut || date_fin) {
-      whereClause.date_paiement = {};
-      if (date_debut) {
-        whereClause.date_paiement[require('sequelize').Op.gte] = new Date(date_debut);
-      }
-      if (date_fin) {
-        whereClause.date_paiement[require('sequelize').Op.lte] = new Date(date_fin);
-      }
-    }
-
-    const offset = (page - 1) * limit;
-
-    const { count, rows: encaissements } = await Encaissement.findAndCountAll({
-      where: whereClause,
-      include: [
-        { model: User, as: 'Validateur', attributes: ['id', 'prenom', 'nom', 'email'] },
-        { model: User, as: 'Createur', attributes: ['id', 'prenom', 'nom', 'email'] },
-        { model: User, as: 'Modificateur', attributes: ['id', 'prenom', 'nom', 'email'] }
-      ],
-      order: [['date_paiement', 'DESC']],
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    });
-
-    const totalPages = Math.ceil(count / limit);
-
-    res.json({
-      success: true,
-      encaissements,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: count,
-        pages: totalPages
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching encaissements:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération des encaissements'
-    });
-  }
-});
-
-// GET /api/encaissements/stats - Statistiques des encaissements
-router.get('/stats', async (req, res) => {
-  try {
-    const { periode } = req.query;
+    console.log('🔍 Récupération des encaissements...');
     
-    const whereClause = {};
-    if (periode) {
-      const [year, month] = periode.split('-');
-      whereClause.date_paiement = {
-        [require('sequelize').Op.gte]: new Date(year, month - 1, 1),
-        [require('sequelize').Op.lt]: new Date(year, month, 1)
-      };
-    }
-
-    const stats = await Encaissement.findAll({
-      where: whereClause,
-      attributes: [
-        'statut',
-        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count'],
-        [require('sequelize').fn('SUM', require('sequelize').col('montant')), 'total_montant']
-      ],
-      group: ['statut']
+    const encaissements = await sequelize.query(`
+      SELECT 
+        e.id, e.reference, e.montant, e.devise, e.type_paiement, e.statut,
+        e.date_paiement, e.beneficiaire, e.description, e.created_at, e.updated_at,
+        e.user_guichet_id, e.created_by, e.encaissement_caisse_id,
+        u.nom as guichetier_nom, u.prenom as guichetier_prenom
+      FROM tbl_encaissements e
+      LEFT JOIN tbl_utilisateurs u ON e.user_guichet_id = u.id
+      ORDER BY e.date_paiement DESC
+    `, {
+      type: sequelize.QueryTypes.SELECT
     });
 
-    const total = await Encaissement.count({ where: whereClause });
-    const totalMontant = await Encaissement.sum('montant', { where: whereClause });
-
-    const result = {
-      total,
-      totalMontant: totalMontant || 0,
-      parStatut: {}
-    };
-
-    stats.forEach(stat => {
-      result.parStatut[stat.statut] = {
-        count: parseInt(stat.dataValues.count),
-        montant: parseFloat(stat.dataValues.total_montant) || 0
-      };
-    });
-
+    console.log('✅ Encaissements récupérés:', encaissements.length);
+    
     res.json({
       success: true,
-      stats: result
+      encaissements: encaissements
     });
   } catch (error) {
-    console.error('Error fetching encaissements stats:', error);
+    console.error('❌ Erreur lors de la récupération des encaissements:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la récupération des statistiques'
-    });
-  }
-});
-
-// GET /api/encaissements/:id - Récupérer un encaissement par ID
-router.get('/:id', [
-  param('id').isInt({ min: 1 })
-], validateRequest, async (req, res) => {
-  try {
-    const encaissement = await Encaissement.findByPk(req.params.id, {
-      include: [
-        { model: User, as: 'Validateur', attributes: ['id', 'prenom', 'nom', 'email'] },
-        { model: User, as: 'Createur', attributes: ['id', 'prenom', 'nom', 'email'] },
-        { model: User, as: 'Modificateur', attributes: ['id', 'prenom', 'nom', 'email'] }
-      ]
-    });
-
-    if (!encaissement) {
-      return res.status(404).json({
-        success: false,
-        message: 'Encaissement non trouvé'
-      });
-    }
-
-    res.json({
-      success: true,
-      encaissement
-    });
-  } catch (error) {
-    console.error('Error fetching encaissement:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération de l\'encaissement'
+      message: 'Erreur lors de la récupération des encaissements',
+      error: error.message
     });
   }
 });
 
 // POST /api/encaissements - Créer un nouvel encaissement
-router.post('/', [
-  requireRole(['Administrateur', 'Superviseur Comptable', 'Caissier']),
-  body('montant').isDecimal({ decimal_digits: '0,2' }).withMessage('Montant invalide'),
-  body('devise').optional().isLength({ max: 3 }).withMessage('Devise invalide'),
-  body('type_paiement').isIn(['Espèces', 'Carte bancaire', 'Chèque', 'Virement', 'Mobile Money', 'Autre']).withMessage('Type de paiement invalide'),
-  body('date_paiement').isISO8601().toDate().withMessage('Date de paiement invalide'),
-  body('beneficiaire').notEmpty().withMessage('Bénéficiaire requis'),
-  body('email_beneficiaire').optional().isEmail().withMessage('Email du bénéficiaire invalide'),
-  body('telephone_beneficiaire').optional().isString().isLength({ max: 20 }),
-  body('description').optional().isString(),
-  body('statut').optional().isIn(['En attente', 'Validé', 'Rejeté', 'Annulé']),
-  body('methode_paiement').optional().isIn(['Espèces', 'Carte bancaire', 'Chèque', 'Virement', 'Mobile Money', 'Autre']),
-  body('numero_transaction').optional().isString().isLength({ max: 100 }),
-  body('nom_banque').optional().isString().isLength({ max: 100 }),
-  body('numero_compte').optional().isString().isLength({ max: 50 })
-], validateRequest, async (req, res) => {
+router.post('/', requireRole(['Administrateur', 'Superviseur Comptable', 'Caissier', 'Guichetier']), [
+  body('reference').notEmpty().withMessage('La référence est requise'),
+  body('montant').isNumeric().withMessage('Le montant doit être numérique'),
+  body('devise').notEmpty().withMessage('La devise est requise'),
+  body('type_paiement').notEmpty().withMessage('Le type de paiement est requis'),
+  body('statut').notEmpty().withMessage('Le statut est requis'),
+  body('date_paiement').isISO8601().withMessage('La date de paiement est requise')
+], async (req, res) => {
   try {
-    const reference = generateReference();
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Données invalides',
+        errors: errors.array()
+      });
+    }
+
+    console.log('🔍 Création d\'un nouvel encaissement...');
     
-    const newEncaissement = await Encaissement.create({
+    const {
       reference,
-      ...req.body,
-      created_by: req.user.id,
-      updated_by: req.user.id
+      montant,
+      devise,
+      type_paiement,
+      statut,
+      date_paiement,
+      description,
+      beneficiaire,
+      utilisateur_id,
+      user_guichet_id,
+      caisse_id,
+      chambre_id,
+      depense_id,
+      numero_cheque
+    } = req.body;
+
+    // Vérifier que la référence est unique
+    const existingEncaissement = await sequelize.query(`
+      SELECT id FROM tbl_encaissements WHERE reference = ?
+    `, {
+      replacements: [reference],
+      type: sequelize.QueryTypes.SELECT
     });
 
+    if (existingEncaissement.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cette référence existe déjà'
+      });
+    }
+
+    // Insérer le nouvel encaissement
+    const result = await sequelize.query(`
+      INSERT INTO tbl_encaissements (
+        reference, montant, devise, type_paiement, statut, date_paiement,
+        description, beneficiaire, user_guichet_id, created_by,
+        encaissement_caisse_id, chambre_id, depense_id, numero_transaction
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, {
+      replacements: [
+        reference, montant, devise, type_paiement, statut, date_paiement,
+        description || null, beneficiaire || null, user_guichet_id || utilisateur_id, req.user.id,
+        caisse_id || null, chambre_id || null, depense_id || null, numero_cheque || null
+      ],
+      type: sequelize.QueryTypes.INSERT
+    });
+
+    console.log('✅ Encaissement créé avec l\'ID:', result[0]);
+    
     res.status(201).json({
       success: true,
       message: 'Encaissement créé avec succès',
-      encaissement: newEncaissement
+      id: result[0]
     });
   } catch (error) {
-    console.error('Error creating encaissement:', error);
+    console.error('❌ Erreur lors de la création de l\'encaissement:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la création de l\'encaissement',
@@ -236,125 +128,148 @@ router.post('/', [
   }
 });
 
-// PUT /api/encaissements/:id - Mettre à jour un encaissement
-router.put('/:id', [
-  requireRole(['Administrateur', 'Superviseur Comptable', 'Caissier']),
-  param('id').isInt({ min: 1 }),
-  body('montant').optional().isDecimal({ decimal_digits: '0,2' }),
-  body('devise').optional().isLength({ max: 3 }),
-  body('type_paiement').optional().isIn(['Espèces', 'Carte bancaire', 'Chèque', 'Virement', 'Mobile Money', 'Autre']),
-  body('date_paiement').optional().isISO8601().toDate(),
-  body('beneficiaire').optional().notEmpty(),
-  body('email_beneficiaire').optional().isEmail(),
-  body('telephone_beneficiaire').optional().isString().isLength({ max: 20 }),
-  body('description').optional().isString(),
-  body('statut').optional().isIn(['En attente', 'Validé', 'Rejeté', 'Annulé']),
-  body('methode_paiement').optional().isIn(['Espèces', 'Carte bancaire', 'Chèque', 'Virement', 'Mobile Money', 'Autre']),
-  body('numero_transaction').optional().isString().isLength({ max: 100 }),
-  body('nom_banque').optional().isString().isLength({ max: 100 }),
-  body('numero_compte').optional().isString().isLength({ max: 50 }),
-  body('commentaires_validation').optional().isString()
-], validateRequest, async (req, res) => {
+// PUT /api/encaissements/:id - Modifier un encaissement
+router.put('/:id', requireRole(['Administrateur', 'Superviseur Comptable', 'Caissier', 'Guichetier']), [
+  body('reference').notEmpty().withMessage('La référence est requise'),
+  body('montant').isNumeric().withMessage('Le montant doit être numérique'),
+  body('devise').notEmpty().withMessage('La devise est requise'),
+  body('type_paiement').notEmpty().withMessage('Le type de paiement est requis'),
+  body('statut').notEmpty().withMessage('Le statut est requis'),
+  body('date_paiement').isISO8601().withMessage('La date de paiement est requise')
+], async (req, res) => {
   try {
-    const encaissement = await Encaissement.findByPk(req.params.id);
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Données invalides',
+        errors: errors.array()
+      });
+    }
+
+    console.log('🔍 Modification de l\'encaissement:', req.params.id);
     
-    if (!encaissement) {
+    const {
+      reference,
+      montant,
+      devise,
+      type_paiement,
+      statut,
+      date_paiement,
+      description,
+      beneficiaire,
+      utilisateur_id,
+      user_guichet_id,
+      caisse_id,
+      chambre_id,
+      depense_id,
+      numero_cheque
+    } = req.body;
+
+    // Vérifier que l'encaissement existe
+    const existingEncaissement = await sequelize.query(`
+      SELECT id FROM tbl_encaissements WHERE id = ?
+    `, {
+      replacements: [req.params.id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (existingEncaissement.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Encaissement non trouvé'
       });
     }
 
-    // Si on change le statut à "Validé", enregistrer qui a validé et quand
-    if (req.body.statut === 'Validé' && encaissement.statut !== 'Validé') {
-      req.body.valide_par = req.user.id;
-      req.body.date_validation = new Date();
+    // Vérifier que la référence est unique (sauf pour cet encaissement)
+    const duplicateReference = await sequelize.query(`
+      SELECT id FROM tbl_encaissements WHERE reference = ? AND id != ?
+    `, {
+      replacements: [reference, req.params.id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (duplicateReference.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cette référence existe déjà'
+      });
     }
 
-    await encaissement.update({
-      ...req.body,
-      updated_by: req.user.id
+    // Mettre à jour l'encaissement
+    await sequelize.query(`
+      UPDATE tbl_encaissements SET
+        reference = ?, montant = ?, devise = ?, type_paiement = ?, statut = ?,
+        date_paiement = ?, description = ?, beneficiaire = ?, user_guichet_id = ?,
+        encaissement_caisse_id = ?, chambre_id = ?, depense_id = ?, numero_transaction = ?,
+        updated_by = ?, updated_at = NOW()
+      WHERE id = ?
+    `, {
+      replacements: [
+        reference, montant, devise, type_paiement, statut, date_paiement,
+        description || null, beneficiaire || null, user_guichet_id || utilisateur_id,
+        caisse_id || null, chambre_id || null, depense_id || null, numero_cheque || null,
+        req.user.id, req.params.id
+      ],
+      type: sequelize.QueryTypes.UPDATE
     });
 
+    console.log('✅ Encaissement modifié avec succès');
+    
     res.json({
       success: true,
-      message: 'Encaissement mis à jour avec succès',
-      encaissement
+      message: 'Encaissement modifié avec succès'
     });
   } catch (error) {
-    console.error('Error updating encaissement:', error);
+    console.error('❌ Erreur lors de la modification de l\'encaissement:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la mise à jour de l\'encaissement',
+      message: 'Erreur lors de la modification de l\'encaissement',
       error: error.message
     });
   }
 });
 
 // DELETE /api/encaissements/:id - Supprimer un encaissement
-router.delete('/:id', [
-  requireRole(['Administrateur', 'Superviseur Comptable']),
-  param('id').isInt({ min: 1 })
-], validateRequest, async (req, res) => {
+router.delete('/:id', requireRole(['Administrateur', 'Superviseur Comptable', 'Caissier', 'Guichetier']), async (req, res) => {
   try {
-    const encaissement = await Encaissement.findByPk(req.params.id);
+    console.log('🔍 Suppression de l\'encaissement:', req.params.id);
     
-    if (!encaissement) {
+    // Vérifier que l'encaissement existe
+    const existingEncaissement = await sequelize.query(`
+      SELECT id FROM tbl_encaissements WHERE id = ?
+    `, {
+      replacements: [req.params.id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (existingEncaissement.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Encaissement non trouvé'
       });
     }
 
-    await encaissement.destroy();
+    // Supprimer l'encaissement
+    await sequelize.query(`
+      DELETE FROM tbl_encaissements WHERE id = ?
+    `, {
+      replacements: [req.params.id],
+      type: sequelize.QueryTypes.DELETE
+    });
 
+    console.log('✅ Encaissement supprimé avec succès');
+    
     res.json({
       success: true,
       message: 'Encaissement supprimé avec succès'
     });
   } catch (error) {
-    console.error('Error deleting encaissement:', error);
+    console.error('❌ Erreur lors de la suppression de l\'encaissement:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la suppression de l\'encaissement'
-    });
-  }
-});
-
-// PUT /api/encaissements/:id/validate - Valider un encaissement
-router.put('/:id/validate', [
-  requireRole(['Administrateur', 'Superviseur Comptable']),
-  param('id').isInt({ min: 1 }),
-  body('commentaires_validation').optional().isString()
-], validateRequest, async (req, res) => {
-  try {
-    const encaissement = await Encaissement.findByPk(req.params.id);
-    
-    if (!encaissement) {
-      return res.status(404).json({
-        success: false,
-        message: 'Encaissement non trouvé'
-      });
-    }
-
-    await encaissement.update({
-      statut: 'Validé',
-      valide_par: req.user.id,
-      date_validation: new Date(),
-      commentaires_validation: req.body.commentaires_validation || '',
-      updated_by: req.user.id
-    });
-
-    res.json({
-      success: true,
-      message: 'Encaissement validé avec succès',
-      encaissement
-    });
-  } catch (error) {
-    console.error('Error validating encaissement:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la validation de l\'encaissement'
+      message: 'Erreur lors de la suppression de l\'encaissement',
+      error: error.message
     });
   }
 });
