@@ -513,7 +513,7 @@ router.get('/reports/financial', async (req, res) => {
         u.nom
       FROM tbl_encaissements e
       LEFT JOIN tbl_caisses c ON e.encaissement_caisse_id = c.id
-      LEFT JOIN tbl_users u ON e.user_guichet_id = u.id
+      LEFT JOIN tbl_utilisateurs u ON e.user_guichet_id = u.id
       WHERE e.date_paiement >= DATE_SUB(NOW(), INTERVAL 30 DAY)
       ORDER BY e.date_paiement DESC
       LIMIT 100
