@@ -372,9 +372,9 @@ router.put('/:id', [
   }
 });
 
-// POST /api/depenses/:id/approve - Approve expense (Superviseur and above)
+// POST /api/depenses/:id/approve - Approve expense (Superviseur and Auditeur)
 router.post('/:id/approve', [
-  requireRole('Superviseur')
+  requireRole(['Superviseur', 'Auditeur'])
 ], async (req, res) => {
   try {
     const { id } = req.params;
