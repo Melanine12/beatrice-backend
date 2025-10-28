@@ -553,7 +553,7 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
     const allEncaissements = await sequelize.query(`
       SELECT 
         p.id, p.reference, p.montant, p.devise, p.type_paiement, p.statut, 
-        p.date_paiement, p.user_guichet_id, p.utilisateur_id,
+        p.date_paiement, p.user_guichet_id as utilisateur_id,
         p.description
       FROM tbl_encaissements p
       WHERE p.encaissement_caisse_id = ? AND p.statut = 'Validé'
@@ -566,7 +566,7 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
     const allPaiementsPartiels = await sequelize.query(`
       SELECT 
         pp.id, pp.reference_paiement as reference, pp.montant, 'USD' as devise, pp.mode_paiement as type_paiement, 'Validé' as statut,
-        pp.date_paiement, pp.utilisateur_id, pp.notes as description
+        pp.date_paiement, pp.user_guichet_id as utilisateur_id, pp.notes as description
       FROM tbl_paiements_partiels pp
       WHERE pp.caisse_id = ? 
       ORDER BY pp.date_paiement DESC
@@ -603,7 +603,7 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
         type: 'Dépense',
         date: pp.date_paiement,
         type_paiement: 'Dépense Partielle',
-        user_guichet_id: pp.utilisateur_id
+        user_guichet_id: pp.user_guichet_id as utilisateur_id
       })),
       ...allDepenses.map(d => ({
         ...d,
@@ -712,7 +712,7 @@ router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Superviseur Fin
     const allEncaissements = await sequelize.query(`
       SELECT 
         p.id, p.reference, p.montant, p.devise, p.type_paiement, p.statut, 
-        p.date_paiement, p.user_guichet_id, p.utilisateur_id,
+        p.date_paiement, p.user_guichet_id as utilisateur_id,
         p.description
       FROM tbl_encaissements p
       WHERE p.encaissement_caisse_id = ? AND p.statut = 'Validé'
@@ -725,7 +725,7 @@ router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Superviseur Fin
     const allPaiementsPartiels = await sequelize.query(`
       SELECT 
         pp.id, pp.reference_paiement as reference, pp.montant, 'USD' as devise, pp.mode_paiement as type_paiement, 'Validé' as statut,
-        pp.date_paiement, pp.utilisateur_id, pp.notes as description
+        pp.date_paiement, pp.user_guichet_id as utilisateur_id, pp.notes as description
       FROM tbl_paiements_partiels pp
       WHERE pp.caisse_id = ? 
       ORDER BY pp.date_paiement DESC
@@ -762,7 +762,7 @@ router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Superviseur Fin
         type: 'Dépense',
         date: pp.date_paiement,
         type_paiement: 'Dépense Partielle',
-        user_guichet_id: pp.utilisateur_id
+        user_guichet_id: pp.user_guichet_id as utilisateur_id
       })),
       ...allDepenses.map(d => ({
         ...d,
