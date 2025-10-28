@@ -71,9 +71,6 @@ const io = new Server(http, {
 });
 app.set('io', io);
 
-// Initialiser le service de notifications avec Socket.io
-offreNotificationService.setSocketIO(io);
-
 const PORT = process.env.PORT || 5002;
 
 // Security middleware
