@@ -506,11 +506,27 @@ router.get('/reports/financial', async (req, res) => {
     // Get recent payments (last 30 days)
     const recentPayments = await sequelize.query(`
       SELECT 
-        e.*,
+        e.id,
+        e.reference,
+        e.montant,
+        COALESCE(e.devise, 'FC') as devise,
+        e.type_paiement,
+        e.statut,
+        e.date_paiement,
+        e.description,
+        e.beneficiaire,
+        e.numero_cheque,
+        e.created_at,
+        e.updated_at,
+        c.id as caisse_id,
         c.nom as caisse_nom,
         c.devise as caisse_devise,
+        c.code as caisse_code,
+        u.id as utilisateur_id,
         u.prenom,
-        u.nom
+        u.nom,
+        u.email,
+        u.role
       FROM tbl_encaissements e
       LEFT JOIN tbl_caisses c ON e.encaissement_caisse_id = c.id
       LEFT JOIN tbl_utilisateurs u ON e.user_guichet_id = u.id
@@ -525,7 +541,7 @@ router.get('/reports/financial', async (req, res) => {
     const caisses = await sequelize.query(`
       SELECT id, nom, devise, solde_actuel as solde
       FROM tbl_caisses 
-      WHERE statut = 'Active'
+      WHERE actif = 1
     `, {
       type: sequelize.QueryTypes.SELECT
     });
@@ -539,13 +555,13 @@ router.get('/reports/financial', async (req, res) => {
     // Calculate revenue by currency
     const revenueByCurrency = await sequelize.query(`
       SELECT 
-        devise,
+        COALESCE(devise, 'FC') as devise,
         SUM(montant) as total,
         COUNT(*) as count
       FROM tbl_encaissements 
       WHERE statut = 'Validé' 
         AND DATE(date_paiement) BETWEEN ? AND ?
-      GROUP BY devise
+      GROUP BY COALESCE(devise, 'FC')
     `, {
       replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
       type: sequelize.QueryTypes.SELECT
@@ -554,13 +570,13 @@ router.get('/reports/financial', async (req, res) => {
     // Calculate expenses by currency
     const expensesByCurrency = await sequelize.query(`
       SELECT 
-        devise,
+        COALESCE(devise, 'FC') as devise,
         SUM(montant) as total,
         COUNT(*) as count
       FROM tbl_depenses 
       WHERE statut IN ('Approuvée', 'Payée')
         AND DATE(date_depense) BETWEEN ? AND ?
-      GROUP BY devise
+      GROUP BY COALESCE(devise, 'FC')
     `, {
       replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
       type: sequelize.QueryTypes.SELECT
@@ -570,13 +586,13 @@ router.get('/reports/financial', async (req, res) => {
     const paymentStatsByStatus = await sequelize.query(`
       SELECT 
         statut as status,
-        devise,
+        COALESCE(devise, 'FC') as devise,
         COUNT(*) as count,
         SUM(montant) as total
       FROM tbl_encaissements 
       WHERE DATE(date_paiement) BETWEEN ? AND ?
-      GROUP BY statut, devise
-      ORDER BY devise, statut
+      GROUP BY statut, COALESCE(devise, 'FC')
+      ORDER BY COALESCE(devise, 'FC'), statut
     `, {
       replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
       type: sequelize.QueryTypes.SELECT
@@ -586,14 +602,14 @@ router.get('/reports/financial', async (req, res) => {
     const paymentStatsByType = await sequelize.query(`
       SELECT 
         type_paiement as type,
-        devise,
+        COALESCE(devise, 'FC') as devise,
         COUNT(*) as count,
         SUM(montant) as total
       FROM tbl_encaissements 
       WHERE statut = 'Validé' 
         AND DATE(date_paiement) BETWEEN ? AND ?
-      GROUP BY type_paiement, devise
-      ORDER BY devise, type_paiement
+      GROUP BY type_paiement, COALESCE(devise, 'FC')
+      ORDER BY COALESCE(devise, 'FC'), type_paiement
     `, {
       replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
       type: sequelize.QueryTypes.SELECT
