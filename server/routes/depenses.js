@@ -486,6 +486,77 @@ router.post('/:id/pay', [
   }
 });
 
+// POST /api/depenses/payer-complet - Marquer une dépense comme payée avec sélection de caisse
+router.post('/payer-complet', requireRole(['Administrateur', 'Patron']), async (req, res) => {
+  try {
+    const { depense_id, caisse_id, date_paiement, mode_paiement, notes } = req.body;
+
+    if (!depense_id || !caisse_id) {
+      return res.status(400).json({ 
+        error: 'depense_id et caisse_id sont requis' 
+      });
+    }
+
+    const depense = await Depense.findByPk(depense_id);
+    if (!depense) {
+      return res.status(404).json({ error: 'Dépense non trouvée' });
+    }
+
+    if (depense.statut !== 'Approuvée') {
+      return res.status(400).json({ 
+        error: 'La dépense doit être approuvée pour être marquée comme payée' 
+      });
+    }
+
+    // Créer le paiement partiel avec tout le montant restant
+    const PaiementPartiel = require('../models/PaiementPartiel');
+    const montantRestant = parseFloat(depense.montant) - parseFloat(depense.montant_paye || 0);
+    
+    const paiement = await PaiementPartiel.create({
+      depense_id,
+      montant: montantRestant,
+      mode_paiement: mode_paiement || 'Espèces',
+      reference_paiement: '',
+      notes: notes || '',
+      utilisateur_id: req.user.id,
+      caisse_id,
+      date_paiement: date_paiement || new Date()
+    });
+
+    // Marquer la dépense comme payée
+    await depense.update({
+      statut: 'Payée',
+      statut_paiement: 'Payé',
+      montant_paye: depense.montant,
+      date_paiement: date_paiement || new Date()
+    });
+
+    // Mettre à jour le solde de la caisse
+    try {
+      const Caisse = require('../models/Caisse');
+      const caisse = await Caisse.findByPk(caisse_id);
+      if (caisse) {
+        await caisse.calculerSoldeActuel();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du solde de la caisse:', error);
+    }
+
+    res.json({
+      message: 'Dépense marquée comme payée avec succès',
+      depense,
+      paiement
+    });
+
+  } catch (error) {
+    console.error('Erreur lors du paiement complet de la dépense:', error);
+    res.status(500).json({ 
+      error: 'Erreur lors du paiement de la dépense',
+      message: error.message 
+    });
+  }
+});
+
 // DELETE /api/depenses/:id - Delete expense (Administrateur and above)
 router.delete('/:id', [
   requireRole('Administrateur')
