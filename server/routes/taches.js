@@ -324,6 +324,11 @@ router.put('/:id', [
       canUpdate = true;
     }
     
+    // Check if user is Jimmy (special permissions)
+    if (req.user.nom === 'Jimmy') {
+      canUpdate = true;
+    }
+    
     // Check if user is department manager (if task is linked to a problematique with a department)
     if (tache.problematique_id) {
       const problematique = await Problematique.findByPk(tache.problematique_id, {
@@ -450,6 +455,11 @@ router.post('/:id/start', async (req, res) => {
       canStart = true;
     }
     
+    // Check if user is Jimmy (special permissions)
+    if (req.user.nom === 'Jimmy') {
+      canStart = true;
+    }
+    
     // Check if user is department manager (if task is linked to a problematique with a department)
     if (tache.problematique_id) {
       const problematique = await Problematique.findByPk(tache.problematique_id, {
@@ -523,6 +533,11 @@ router.post('/:id/complete', async (req, res) => {
       canComplete = true;
     }
     
+    // Check if user is Jimmy (special permissions)
+    if (req.user.nom === 'Jimmy') {
+      canComplete = true;
+    }
+    
     // Check if user is department manager (if task is linked to a problematique with a department)
     if (tache.problematique_id) {
       const problematique = await Problematique.findByPk(tache.problematique_id, {
@@ -570,10 +585,15 @@ router.post('/:id/complete', async (req, res) => {
   }
 });
 
-// DELETE /api/taches/:id - Delete task (Administrateur and above)
-router.delete('/:id', [
-  requireRole('Administrateur')
-], async (req, res) => {
+// DELETE /api/taches/:id - Delete task (Administrateur and above, or Jimmy)
+router.delete('/:id', async (req, res) => {
+  // Check if user has permission to delete tasks
+  if (!req.user.hasPermission('Administrateur') && req.user.nom !== 'Jimmy') {
+    return res.status(403).json({ 
+      error: 'Insufficient permissions',
+      message: 'Permissions insuffisantes pour supprimer cette tâche'
+    });
+  }
   try {
     const { id } = req.params;
     const tache = await Tache.findByPk(id);

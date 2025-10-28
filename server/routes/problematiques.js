@@ -750,6 +750,11 @@ router.put('/:id', [
       canUpdate = true;
     }
     
+    // Check if user is Jimmy (special permissions)
+    if (req.user.nom === 'Jimmy') {
+      canUpdate = true;
+    }
+    
     // Check if user is department manager
     if (problematique.departement_id) {
       const departement = await Departement.findByPk(problematique.departement_id);
@@ -935,10 +940,15 @@ router.post('/:id/comment', [
   }
 });
 
-// DELETE /api/problematiques/:id - Delete issue (Administrateur and above)
-router.delete('/:id', [
-  requireRole('Administrateur')
-], async (req, res) => {
+// DELETE /api/problematiques/:id - Delete issue (Administrateur and above, or Jimmy)
+router.delete('/:id', async (req, res) => {
+  // Check if user has permission to delete problematiques
+  if (!req.user.hasPermission('Administrateur') && req.user.nom !== 'Jimmy') {
+    return res.status(403).json({ 
+      error: 'Insufficient permissions',
+      message: 'Permissions insuffisantes pour supprimer cette problématique'
+    });
+  }
   try {
     const { id } = req.params;
     const problematique = await Problematique.findByPk(id);
