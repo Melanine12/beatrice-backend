@@ -105,22 +105,24 @@ const Caisse = sequelize.define('Caisse', {
 Caisse.prototype.calculerSoldeActuel = async function() {
   try {
     console.log('🔄 Début du calcul du solde pour la caisse:', this.id);
-    const Paiement = require('./Paiement');
     const Depense = require('./Depense');
     const PaiementPartiel = require('./PaiementPartiel');
+    const Encaissement = require('./Encaissement');
     
-    // Récupérer la somme des paiements liés à cette caisse
-    console.log('🔍 Recherche des paiements pour la caisse:', this.id);
-    const resultatPaiements = await Paiement.findOne({
+    // Récupérer la somme des encaissements liés à cette caisse (ENTRÉES)
+    console.log('🔍 Recherche des encaissements pour la caisse:', this.id);
+    const resultatEncaissements = await Encaissement.findAll({
       where: { 
         caisse_id: this.id,
-        statut: 'Validé' // Seulement les paiements validés
+        statut: 'Validé' // Seulement les encaissements validés
       },
       attributes: [
-        [sequelize.fn('SUM', sequelize.col('montant')), 'total_paiements']
+        [sequelize.fn('SUM', sequelize.col('montant')), 'total_encaissements']
       ],
       raw: true
     });
+    
+    const totalEncaissements = parseFloat(resultatEncaissements[0]?.total_encaissements || 0);
 
     // Récupérer la somme des paiements partiels liés à cette caisse (DÉPENSES pour la caisse)
     console.log('🔍 Recherche des paiements partiels (dépenses) pour la caisse:', this.id);
@@ -149,23 +151,22 @@ Caisse.prototype.calculerSoldeActuel = async function() {
       raw: true
     });
 
-    console.log('📊 Résultat des paiements:', resultatPaiements);
+    console.log('📊 Résultat des encaissements:', totalEncaissements);
     console.log('📊 Résultat des paiements partiels:', resultatPaiementsPartiels);
     console.log('📊 Résultat des dépenses:', resultatDepenses);
     
-    const totalPaiements = parseFloat(resultatPaiements?.total_paiements || 0);
     const totalPaiementsPartiels = parseFloat(resultatPaiementsPartiels?.total_paiements_partiels || 0);
     const totalDepenses = parseFloat(resultatDepenses?.total_depenses || 0);
     const soldeInitial = parseFloat(this.solde_initial || 0);
     // Les paiements partiels sont des DÉPENSES pour la caisse (argent qui sort)
-    const soldeActuel = soldeInitial + totalPaiements - totalPaiementsPartiels - totalDepenses;
+    const soldeActuel = soldeInitial + totalEncaissements - totalPaiementsPartiels - totalDepenses;
 
     console.log('💰 Calcul du solde:', {
       soldeInitial,
-      totalPaiements: `+${totalPaiements} (entrées)`,
+      totalEncaissements: `+${totalEncaissements} (entrées)`,
       totalPaiementsPartiels: `-${totalPaiementsPartiels} (dépenses partiels)`,
       totalDepenses: `-${totalDepenses} (dépenses)`,
-      soldeActuel: `${soldeInitial} + ${totalPaiements} - ${totalPaiementsPartiels} - ${totalDepenses} = ${soldeActuel}`
+      soldeActuel: `${soldeInitial} + ${totalEncaissements} - ${totalPaiementsPartiels} - ${totalDepenses} = ${soldeActuel}`
     });
 
     // Mettre à jour le solde actuel dans la base de données
