@@ -535,7 +535,7 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
     const totalCount = await sequelize.query(`
       SELECT 
         (SELECT COUNT(*) FROM tbl_encaissements WHERE caisse_id = ? AND statut = 'Validé') +
-        (SELECT COUNT(*) FROM tbl_encaissements_partiels WHERE caisse_id = ?) +
+        (SELECT COUNT(*) FROM tbl_paiements_partiels WHERE caisse_id = ?) +
         (SELECT COUNT(*) FROM tbl_depenses WHERE caisse_id = ? AND statut IN ('Approuvée', 'Payée'))
         as total
     `, {
@@ -563,11 +563,11 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
       type: sequelize.QueryTypes.SELECT
     });
 
-    const allEncaissementsPartiels = await sequelize.query(`
+    const allPaiementsPartiels = await sequelize.query(`
       SELECT 
         pp.id, pp.reference_paiement as reference, pp.montant, 'USD' as devise, pp.mode_paiement as type_paiement, 'Validé' as statut,
         pp.date_paiement, pp.utilisateur_id, pp.notes as description
-      FROM tbl_encaissements_partiels pp
+      FROM tbl_paiements_partiels pp
       WHERE pp.caisse_id = ? 
       ORDER BY pp.date_paiement DESC
     `, {
@@ -588,7 +588,7 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
       type: sequelize.QueryTypes.SELECT
     });
 
-    console.log('📊 Total récupéré - Encaissements:', allEncaissements.length, 'Paiements partiels:', allEncaissementsPartiels.length, 'Dépenses:', allDepenses.length);
+    console.log('📊 Total récupéré - Encaissements:', allEncaissements.length, 'Paiements partiels:', allPaiementsPartiels.length, 'Dépenses:', allDepenses.length);
 
     // Combiner et trier toutes les transactions
     const allTransactions = [
@@ -598,7 +598,7 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
         date: p.date_paiement,
         type_paiement: p.type_paiement || 'Encaissement'
       })),
-      ...allEncaissementsPartiels.map(pp => ({
+      ...allPaiementsPartiels.map(pp => ({
         ...pp,
         type: 'Dépense',
         date: pp.date_paiement,
@@ -622,20 +622,26 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
     console.log('📊 Transactions paginées:', transactions.length, 'sur', allTransactions.length, '(page', page, ')');
 
     // Calculer le résumé avec sécurité pour les tableaux vides
-    const totalPaiements = Array.isArray(allEncaissements) ? allEncaissements.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0) : 0;
-    const totalPaiementsPartiels = Array.isArray(allEncaissementsPartiels) ? allEncaissementsPartiels.reduce((sum, pp) => sum + parseFloat(pp.montant || 0), 0) : 0;
-    const totalDepenses = Array.isArray(allDepenses) ? allDepenses.reduce((sum, d) => sum + parseFloat(d.montant || 0), 0) : 0;
+    // totalEncaissements = revenus (argent qui entre dans la caisse)
+    const totalEncaissements = Array.isArray(allEncaissements) ? allEncaissements.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0) : 0;
+    
+    // totalDecaissements = dépenses régulières
+    const totalDecaissements = Array.isArray(allDepenses) ? allDepenses.reduce((sum, d) => sum + parseFloat(d.montant || 0), 0) : 0;
+    
+    // totalPaiementsPartiels = paiements partiels aux fournisseurs (décaissements)
+    const totalPaiementsPartiels = Array.isArray(allPaiementsPartiels) ? allPaiementsPartiels.reduce((sum, pp) => sum + parseFloat(pp.montant || 0), 0) : 0;
+    
     const soldeInitial = parseFloat(caisse.solde_initial || 0);
     
-    // Les paiements partiels sont des DÉPENSES pour la caisse (argent qui sort)
-    // Total des dépenses = dépenses + paiements partiels
-    const totalDepensesComplet = totalDepenses + totalPaiementsPartiels;
-    const soldeCalcule = soldeInitial + totalPaiements - totalDepensesComplet;
+    // Total des décaissements = dépenses + paiements partiels
+    // Solde calculé = solde initial + encaissements - (décaissements + paiements partiels)
+    const totalDepensesComplet = totalDecaissements + totalPaiementsPartiels;
+    const soldeCalcule = soldeInitial + totalEncaissements - totalDepensesComplet;
 
     const summary = {
-      totalPaiements,
+      totalPaiements: totalEncaissements, // pour compatibilité avec le frontend
       totalPaiementsPartiels,
-      totalDepenses,
+      totalDepenses: totalDecaissements, // pour compatibilité avec le frontend
       totalDepensesComplet, // Dépenses + Paiements partiels
       soldeInitial,
       soldeCalcule
@@ -644,11 +650,11 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
     console.log('✅ Transactions récupérées:', {
       caisseId: caisse.id,
       paiementsCount: allEncaissements.length,
-      paiementsPartielsCount: allEncaissementsPartiels.length,
+      paiementsPartielsCount: allPaiementsPartiels.length,
       depensesCount: allDepenses.length,
-      totalPaiements,
+      totalEncaissements,
       totalPaiementsPartiels,
-      totalDepenses,
+      totalDecaissements,
       soldeCalcule,
       pagination: { page, limit, totalPages, totalTransactions }
     });
@@ -716,11 +722,11 @@ router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Superviseur Fin
       type: sequelize.QueryTypes.SELECT
     });
 
-    const allEncaissementsPartiels = await sequelize.query(`
+    const allPaiementsPartiels = await sequelize.query(`
       SELECT 
         pp.id, pp.reference_paiement as reference, pp.montant, 'USD' as devise, pp.mode_paiement as type_paiement, 'Validé' as statut,
         pp.date_paiement, pp.utilisateur_id, pp.notes as description
-      FROM tbl_encaissements_partiels pp
+      FROM tbl_paiements_partiels pp
       WHERE pp.caisse_id = ? 
       ORDER BY pp.date_paiement DESC
     `, {
@@ -741,7 +747,7 @@ router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Superviseur Fin
       type: sequelize.QueryTypes.SELECT
     });
 
-    console.log('📊 Total récupéré pour le PDF - Paiements:', allEncaissements.length, 'Paiements partiels:', allEncaissementsPartiels.length, 'Dépenses:', allDepenses.length);
+    console.log('📊 Total récupéré pour le PDF - Paiements:', allEncaissements.length, 'Paiements partiels:', allPaiementsPartiels.length, 'Dépenses:', allDepenses.length);
 
     // Combiner et trier toutes les transactions
     const allTransactions = [
@@ -751,7 +757,7 @@ router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Superviseur Fin
         date: p.date_paiement,
         type_paiement: p.type_paiement || 'Encaissement'
       })),
-      ...allEncaissementsPartiels.map(pp => ({
+      ...allPaiementsPartiels.map(pp => ({
         ...pp,
         type: 'Dépense',
         date: pp.date_paiement,
@@ -767,21 +773,20 @@ router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Superviseur Fin
       }))
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Calculer le résumé
-    const totalPaiements = allEncaissements.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
-    const totalPaiementsPartiels = allEncaissementsPartiels.reduce((sum, pp) => sum + parseFloat(pp.montant || 0), 0);
-    const totalDepenses = allDepenses.reduce((sum, d) => sum + parseFloat(d.montant || 0), 0);
+    // Calculer le résumé pour PDF avec la même logique que la route principale
+    const totalEncaissementsPDF = allEncaissements.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
+    const totalDecaissementsPDF = allDepenses.reduce((sum, d) => sum + parseFloat(d.montant || 0), 0);
+    const totalPaiementsPartielsPDF = allPaiementsPartiels.reduce((sum, pp) => sum + parseFloat(pp.montant || 0), 0);
     const soldeInitial = parseFloat(caisse.solde_initial || 0);
     
-    // Les paiements partiels sont des DÉPENSES pour la caisse (argent qui sort)
-    // Total des dépenses = dépenses + paiements partiels
-    const totalDepensesComplet = totalDepenses + totalPaiementsPartiels;
-    const soldeCalcule = soldeInitial + totalPaiements - totalDepensesComplet;
+    // Total des décaissements = dépenses + paiements partiels
+    const totalDepensesComplet = totalDecaissementsPDF + totalPaiementsPartielsPDF;
+    const soldeCalcule = soldeInitial + totalEncaissementsPDF - totalDepensesComplet;
 
     const summary = {
-      totalPaiements,
-      totalPaiementsPartiels,
-      totalDepenses,
+      totalPaiements: totalEncaissementsPDF, // pour compatibilité
+      totalPaiementsPartiels: totalPaiementsPartielsPDF,
+      totalDepenses: totalDecaissementsPDF, // pour compatibilité
       totalDepensesComplet,
       soldeInitial,
       soldeCalcule
