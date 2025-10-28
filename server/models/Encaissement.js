@@ -21,6 +21,15 @@ module.exports = (sequelize) => {
       },
       comment: 'ID de la caisse associée à cet encaissement',
     },
+    user_guichet_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'tbl_utilisateurs',
+        key: 'id',
+      },
+      comment: 'ID de l\'utilisateur guichetier qui a effectué l\'encaissement',
+    },
     montant: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
