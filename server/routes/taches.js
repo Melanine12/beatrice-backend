@@ -243,6 +243,12 @@ router.post('/', [
       delete tacheData.notes;
     }
 
+    if (tacheData.duree_estimee === '' || tacheData.duree_estimee === null) {
+      delete tacheData.duree_estimee;
+    } else if (tacheData.duree_estimee) {
+      tacheData.duree_estimee = parseInt(tacheData.duree_estimee);
+    }
+
     const tache = await Tache.create(tacheData);
 
     // Envoyer notification push si assigné
@@ -396,6 +402,12 @@ router.put('/:id', [
 
     if (updateData.notes === '' || updateData.notes === null) {
       delete updateData.notes;
+    }
+
+    if (updateData.duree_estimee === '' || updateData.duree_estimee === null) {
+      delete updateData.duree_estimee;
+    } else if (updateData.duree_estimee) {
+      updateData.duree_estimee = parseInt(updateData.duree_estimee);
     }
 
     // Vérifier si l'assignation a changé
