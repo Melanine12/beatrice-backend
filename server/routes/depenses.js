@@ -448,9 +448,9 @@ router.post('/:id/reject', [
   }
 });
 
-// POST /api/depenses/:id/pay - Mark expense as paid (Administrateur and above)
+// POST /api/depenses/:id/pay - Mark expense as paid (Administrateur, Patron, and Superviseur Finance)
 router.post('/:id/pay', [
-  requireRole('Administrateur')
+  requireRole(['Administrateur', 'Patron', 'Superviseur Finance'])
 ], async (req, res) => {
   try {
     const { id } = req.params;

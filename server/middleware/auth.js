@@ -64,6 +64,14 @@ const requireRole = (requiredRole) => {
     // Gérer les tableaux de rôles
     const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     
+    // Debug logging
+    console.log('🔍 requireRole check:', {
+      userRole: req.user.role,
+      requiredRoles: requiredRoles,
+      route: req.path,
+      method: req.method
+    });
+    
     // Vérifier si l'utilisateur a un des rôles requis
     if (!requiredRoles.includes(req.user.role)) {
       return res.status(403).json({ 
