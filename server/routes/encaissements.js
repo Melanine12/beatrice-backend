@@ -75,8 +75,6 @@ router.post('/', requireRole(['Administrateur', 'Superviseur Comptable', 'Caissi
       utilisateur_id,
       user_guichet_id,
       caisse_id,
-      chambre_id,
-      depense_id,
       numero_cheque
     } = req.body;
 
@@ -100,13 +98,13 @@ router.post('/', requireRole(['Administrateur', 'Superviseur Comptable', 'Caissi
       INSERT INTO tbl_encaissements (
         reference, montant, devise, type_paiement, statut, date_paiement,
         description, beneficiaire, user_guichet_id, created_by,
-        encaissement_caisse_id, chambre_id, depense_id, numero_transaction
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        encaissement_caisse_id, numero_transaction
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, {
       replacements: [
         reference, montant, devise, type_paiement, statut, date_paiement,
         description || null, beneficiaire || null, user_guichet_id || utilisateur_id, req.user.id,
-        caisse_id || null, chambre_id || null, depense_id || null, numero_cheque || null
+        caisse_id || null, numero_cheque || null
       ],
       type: sequelize.QueryTypes.INSERT
     });
@@ -161,8 +159,6 @@ router.put('/:id', requireRole(['Administrateur', 'Superviseur Comptable', 'Cais
       utilisateur_id,
       user_guichet_id,
       caisse_id,
-      chambre_id,
-      depense_id,
       numero_cheque
     } = req.body;
 
@@ -201,14 +197,14 @@ router.put('/:id', requireRole(['Administrateur', 'Superviseur Comptable', 'Cais
       UPDATE tbl_encaissements SET
         reference = ?, montant = ?, devise = ?, type_paiement = ?, statut = ?,
         date_paiement = ?, description = ?, beneficiaire = ?, user_guichet_id = ?,
-        encaissement_caisse_id = ?, chambre_id = ?, depense_id = ?, numero_transaction = ?,
+        encaissement_caisse_id = ?, numero_transaction = ?,
         updated_by = ?, updated_at = NOW()
       WHERE id = ?
     `, {
       replacements: [
         reference, montant, devise, type_paiement, statut, date_paiement,
         description || null, beneficiaire || null, user_guichet_id || utilisateur_id,
-        caisse_id || null, chambre_id || null, depense_id || null, numero_cheque || null,
+        caisse_id || null, numero_cheque || null,
         req.user.id, req.params.id
       ],
       type: sequelize.QueryTypes.UPDATE
