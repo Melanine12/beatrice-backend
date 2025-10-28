@@ -534,12 +534,12 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
     console.log('🔍 Comptage total des transactions...');
     const totalCount = await sequelize.query(`
       SELECT 
-        (0) +
+        (SELECT COUNT(*) FROM tbl_encaissements WHERE encaissement_caisse_id = ? AND statut = 'Validé') +
         (SELECT COUNT(*) FROM tbl_paiements_partiels WHERE caisse_id = ?) +
         (SELECT COUNT(*) FROM tbl_depenses WHERE caisse_id = ? AND statut IN ('Approuvée', 'Payée'))
         as total
     `, {
-      replacements: [caisse.id, caisse.id],
+      replacements: [caisse.id, caisse.id, caisse.id],
       type: sequelize.QueryTypes.SELECT
     });
     
@@ -550,7 +550,18 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
 
     // Récupérer TOUTES les transactions d'abord, puis appliquer la pagination
     console.log('🔍 Recherche de toutes les transactions...');
-    const allEncaissements = [];
+    const allEncaissements = await sequelize.query(`
+      SELECT 
+        p.id, p.reference, p.montant, p.devise, p.type_paiement, p.statut, 
+        p.date_paiement, p.user_guichet_id, p.utilisateur_id,
+        p.description
+      FROM tbl_encaissements p
+      WHERE p.encaissement_caisse_id = ? AND p.statut = 'Validé'
+      ORDER BY p.date_paiement DESC
+    `, {
+      replacements: [caisse.id],
+      type: sequelize.QueryTypes.SELECT
+    });
 
     const allPaiementsPartiels = await sequelize.query(`
       SELECT 
@@ -612,7 +623,7 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
 
     // Calculer le résumé avec sécurité pour les tableaux vides
     // totalEncaissements = revenus (argent qui entre dans la caisse)
-    const totalEncaissements = 0;
+    const totalEncaissements = Array.isArray(allEncaissements) ? allEncaissements.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0) : 0;
     
     // totalDecaissements = dépenses régulières
     const totalDecaissements = Array.isArray(allDepenses) ? allDepenses.reduce((sum, d) => sum + parseFloat(d.montant || 0), 0) : 0;
@@ -638,7 +649,7 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
 
     console.log('✅ Transactions récupérées:', {
       caisseId: caisse.id,
-      paiementsCount: 0,
+      paiementsCount: allEncaissements.length,
       paiementsPartielsCount: allPaiementsPartiels.length,
       depensesCount: allDepenses.length,
       totalEncaissements,
@@ -698,7 +709,18 @@ router.get('/:id/transactions/pdf', requireRole(['Superviseur', 'Superviseur Fin
     // Récupérer TOUTES les transactions (sans pagination pour le PDF)
     console.log('🔍 Récupération de toutes les transactions pour le PDF...');
     
-    const allEncaissements = [];
+    const allEncaissements = await sequelize.query(`
+      SELECT 
+        p.id, p.reference, p.montant, p.devise, p.type_paiement, p.statut, 
+        p.date_paiement, p.user_guichet_id, p.utilisateur_id,
+        p.description
+      FROM tbl_encaissements p
+      WHERE p.encaissement_caisse_id = ? AND p.statut = 'Validé'
+      ORDER BY p.date_paiement DESC
+    `, {
+      replacements: [caisse.id],
+      type: sequelize.QueryTypes.SELECT
+    });
 
     const allPaiementsPartiels = await sequelize.query(`
       SELECT 

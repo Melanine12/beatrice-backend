@@ -110,9 +110,18 @@ Caisse.prototype.calculerSoldeActuel = async function() {
     const sequelize = Caisse.sequelize;
     const { QueryTypes } = require('sequelize');
     
-    // Note: Les encaissements ne sont pas liés aux caisses dans cette structure
-    // Ils sont gérés séparément du système de caisses
-    const totalEncaissements = 0;
+    // Récupérer la somme des encaissements liés à cette caisse (ENTRÉES)
+    console.log('🔍 Recherche des encaissements pour la caisse:', this.id);
+    const resultatEncaissements = await sequelize.query(`
+      SELECT SUM(montant) as total_encaissements 
+      FROM tbl_encaissements 
+      WHERE encaissement_caisse_id = ? AND statut = 'Validé'
+    `, {
+      replacements: [this.id],
+      type: QueryTypes.SELECT
+    });
+    
+    const totalEncaissements = parseFloat(resultatEncaissements[0]?.total_encaissements || 0);
 
     // Récupérer la somme des paiements partiels liés à cette caisse (DÉPENSES pour la caisse)
     console.log('🔍 Recherche des paiements partiels (dépenses) pour la caisse:', this.id);
@@ -144,15 +153,15 @@ Caisse.prototype.calculerSoldeActuel = async function() {
     const totalDepenses = parseFloat(resultatDepenses[0]?.total_depenses || 0);
     const soldeInitial = parseFloat(this.solde_initial || 0);
     // Les paiements partiels sont des DÉPENSES pour la caisse (argent qui sort)
-    // Solde = solde initial - dépenses - paiements partiels (pas d'encaissements liés aux caisses)
-    const soldeActuel = soldeInitial - totalPaiementsPartiels - totalDepenses;
+    // Solde = solde initial + encaissements - dépenses - paiements partiels
+    const soldeActuel = soldeInitial + totalEncaissements - totalPaiementsPartiels - totalDepenses;
 
     console.log('💰 Calcul du solde:', {
       soldeInitial,
-      totalEncaissements: `${totalEncaissements} (non liés aux caisses)`,
+      totalEncaissements: `+${totalEncaissements} (entrées)`,
       totalPaiementsPartiels: `-${totalPaiementsPartiels} (dépenses partiels)`,
       totalDepenses: `-${totalDepenses} (dépenses)`,
-      soldeActuel: `${soldeInitial} - ${totalPaiementsPartiels} - ${totalDepenses} = ${soldeActuel}`
+      soldeActuel: `${soldeInitial} + ${totalEncaissements} - ${totalPaiementsPartiels} - ${totalDepenses} = ${soldeActuel}`
     });
 
     // Mettre à jour le solde actuel dans la base de données

@@ -12,6 +12,15 @@ module.exports = (sequelize) => {
       allowNull: false,
       unique: true,
     },
+    encaissement_caisse_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'tbl_caisses',
+        key: 'id',
+      },
+      comment: 'ID de la caisse associée à cet encaissement',
+    },
     montant: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
