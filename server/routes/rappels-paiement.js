@@ -102,7 +102,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/rappels-paiement - Créer un nouveau rappel de paiement
-router.post('/', requireRole(['Superviseur', 'Administrateur']), async (req, res) => {
+router.post('/', requireRole(['Superviseur', 'Administrateur', 'Superviseur Finance']), async (req, res) => {
   try {
     const {
       depense_id,
@@ -167,7 +167,7 @@ router.post('/', requireRole(['Superviseur', 'Administrateur']), async (req, res
 });
 
 // PUT /api/rappels-paiement/:id - Mettre à jour un rappel de paiement
-router.put('/:id', requireRole(['Superviseur', 'Administrateur']), async (req, res) => {
+router.put('/:id', requireRole(['Superviseur', 'Administrateur', 'Superviseur Finance']), async (req, res) => {
   try {
     const rappel = await RappelPaiement.findByPk(req.params.id);
     if (!rappel) {

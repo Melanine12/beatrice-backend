@@ -100,7 +100,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/paiements-partiels - Créer un nouveau paiement partiel
-router.post('/', requireRole(['Superviseur', 'Administrateur', 'Patron']), async (req, res) => {
+router.post('/', requireRole(['Superviseur', 'Administrateur', 'Patron', 'Superviseur Finance']), async (req, res) => {
   try {
     const {
       depense_id,
@@ -195,7 +195,7 @@ router.post('/', requireRole(['Superviseur', 'Administrateur', 'Patron']), async
 });
 
 // PUT /api/paiements-partiels/:id - Mettre à jour un paiement partiel
-router.put('/:id', requireRole(['Superviseur', 'Administrateur']), async (req, res) => {
+router.put('/:id', requireRole(['Superviseur', 'Administrateur', 'Superviseur Finance']), async (req, res) => {
   try {
     const paiement = await PaiementPartiel.findByPk(req.params.id);
     if (!paiement) {
