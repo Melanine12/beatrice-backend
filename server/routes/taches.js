@@ -187,9 +187,15 @@ router.post('/', [
     if (value === '' || value === null || value === undefined) return true;
     return !isNaN(Date.parse(value));
   }),
-  body('duree_estimee').optional().isInt({ min: 0 }),
+  body('duree_estimee').optional().custom((value) => {
+    if (value === '' || value === null || value === undefined) return true;
+    return !isNaN(parseInt(value)) && parseInt(value) >= 0;
+  }),
   body('notes').optional().isLength({ max: 1000 }),
-  body('tags').optional().isString()
+  body('tags').optional().custom((value) => {
+    if (value === '' || value === null || value === undefined) return true;
+    return typeof value === 'string';
+  })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -287,9 +293,15 @@ router.put('/:id', [
     if (value === '' || value === null || value === undefined) return true;
     return !isNaN(Date.parse(value));
   }),
-  body('duree_estimee').optional().isInt({ min: 0 }),
+  body('duree_estimee').optional().custom((value) => {
+    if (value === '' || value === null || value === undefined) return true;
+    return !isNaN(parseInt(value)) && parseInt(value) >= 0;
+  }),
   body('notes').optional().isLength({ max: 1000 }),
-  body('tags').optional().isString()
+  body('tags').optional().custom((value) => {
+    if (value === '' || value === null || value === undefined) return true;
+    return typeof value === 'string';
+  })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
