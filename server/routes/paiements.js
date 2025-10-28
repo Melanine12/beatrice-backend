@@ -566,30 +566,34 @@ router.get('/reports/financial', async (req, res) => {
       type: sequelize.QueryTypes.SELECT
     });
 
-    // Payment stats by status
+    // Payment stats by status and currency
     const paymentStatsByStatus = await sequelize.query(`
       SELECT 
         statut as status,
+        devise,
         COUNT(*) as count,
         SUM(montant) as total
       FROM tbl_encaissements 
       WHERE DATE(date_paiement) BETWEEN ? AND ?
-      GROUP BY statut
+      GROUP BY statut, devise
+      ORDER BY devise, statut
     `, {
       replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
       type: sequelize.QueryTypes.SELECT
     });
 
-    // Payment stats by type
+    // Payment stats by type and currency
     const paymentStatsByType = await sequelize.query(`
       SELECT 
         type_paiement as type,
+        devise,
         COUNT(*) as count,
         SUM(montant) as total
       FROM tbl_encaissements 
       WHERE statut = 'Validé' 
         AND DATE(date_paiement) BETWEEN ? AND ?
-      GROUP BY type_paiement
+      GROUP BY type_paiement, devise
+      ORDER BY devise, type_paiement
     `, {
       replacements: [startOfYear.toISOString().split('T')[0], endOfYear.toISOString().split('T')[0]],
       type: sequelize.QueryTypes.SELECT
@@ -623,6 +627,27 @@ router.get('/reports/financial', async (req, res) => {
     // Calculate total cash balance
     const totalCashBalance = caisses.reduce((sum, caisse) => sum + parseFloat(caisse.solde || 0), 0);
 
+    // Calculate financial summary by currency
+    const financialSummaryByCurrency = {};
+    revenueByCurrency.forEach(revenue => {
+      const devise = revenue.devise;
+      const expense = expensesByCurrency.find(e => e.devise === devise);
+      const totalRev = parseFloat(revenue.total) || 0;
+      const totalExp = parseFloat(expense?.total) || 0;
+      const netProfit = totalRev - totalExp;
+      const profitMargin = totalRev > 0 ? ((netProfit / totalRev) * 100) : 0;
+      
+      financialSummaryByCurrency[devise] = {
+        totalRevenue: totalRev,
+        totalExpenses: totalExp,
+        netProfit: netProfit,
+        profitMargin: profitMargin,
+        averageMonthlyRevenue: totalRev / 6,
+        averageMonthlyExpenses: totalExp / 6,
+        averageMonthlyProfit: netProfit / 6
+      };
+    });
+
     res.json({
       success: true,
       data: {
@@ -642,6 +667,7 @@ router.get('/reports/financial', async (req, res) => {
         recentPayments,
         revenueByCurrency,
         expensesByCurrency,
+        financialSummaryByCurrency,
         totalAllTimeRevenueByCurrency: {} // Can be implemented later
       }
     });
