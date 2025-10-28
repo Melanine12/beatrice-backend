@@ -621,10 +621,10 @@ router.get('/:id/transactions', requireRole(['Superviseur', 'Superviseur Finance
 
     console.log('📊 Transactions paginées:', transactions.length, 'sur', allTransactions.length, '(page', page, ')');
 
-    // Calculer le résumé
-    const totalPaiements = allPaiements.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
-    const totalPaiementsPartiels = allPaiementsPartiels.reduce((sum, pp) => sum + parseFloat(pp.montant || 0), 0);
-    const totalDepenses = allDepenses.reduce((sum, d) => sum + parseFloat(d.montant || 0), 0);
+    // Calculer le résumé avec sécurité pour les tableaux vides
+    const totalPaiements = Array.isArray(allPaiements) ? allPaiements.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0) : 0;
+    const totalPaiementsPartiels = Array.isArray(allPaiementsPartiels) ? allPaiementsPartiels.reduce((sum, pp) => sum + parseFloat(pp.montant || 0), 0) : 0;
+    const totalDepenses = Array.isArray(allDepenses) ? allDepenses.reduce((sum, d) => sum + parseFloat(d.montant || 0), 0) : 0;
     const soldeInitial = parseFloat(caisse.solde_initial || 0);
     
     // Les paiements partiels sont des DÉPENSES pour la caisse (argent qui sort)
