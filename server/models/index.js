@@ -45,6 +45,8 @@ const CheckLinge = require('./CheckLinge')(sequelize);
 const NettoyageChambre = require('./NettoyageChambre')(sequelize);
 const Encaissement = require('./Encaissement')(sequelize);
 const Pointage = require('./Pointage')(sequelize);
+const SuiviMaintenance = require('./SuiviMaintenance')(sequelize);
+const Alerte = require('./Alerte')(sequelize);
 
 // Associations pour les problématiques
 User.hasMany(Problematique, { foreignKey: 'rapporteur_id', as: 'ProblematiquesRapporteur' });
@@ -577,6 +579,20 @@ Pointage.belongsTo(User, { foreignKey: 'created_by', as: 'Createur' });
 User.hasMany(Pointage, { foreignKey: 'updated_by', as: 'PointagesModifies' });
 Pointage.belongsTo(User, { foreignKey: 'updated_by', as: 'Modificateur' });
 
+// Associations pour les suivis de maintenance
+User.hasMany(SuiviMaintenance, { foreignKey: 'responsable_id', as: 'MaintenancesResponsable' });
+SuiviMaintenance.belongsTo(User, { foreignKey: 'responsable_id', as: 'responsable' });
+
+User.hasMany(SuiviMaintenance, { foreignKey: 'createur_id', as: 'MaintenancesCreees' });
+SuiviMaintenance.belongsTo(User, { foreignKey: 'createur_id', as: 'createur' });
+
+// Associations pour les alertes
+User.hasMany(Alerte, { foreignKey: 'destinataire_id', as: 'AlertesRecues' });
+Alerte.belongsTo(User, { foreignKey: 'destinataire_id', as: 'destinataire' });
+
+SuiviMaintenance.hasMany(Alerte, { foreignKey: 'maintenance_id', as: 'alertes' });
+Alerte.belongsTo(SuiviMaintenance, { foreignKey: 'maintenance_id', as: 'maintenance' });
+
 module.exports = {
   User,
   Chambre,
@@ -623,5 +639,7 @@ module.exports = {
   CheckLinge,
   NettoyageChambre,
   Encaissement,
-  Pointage
+  Pointage,
+  SuiviMaintenance,
+  Alerte
 }; 
