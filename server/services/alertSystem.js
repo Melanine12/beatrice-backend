@@ -78,7 +78,7 @@ class AlertSystem {
         WHERE statut != 'Résolu' 
         AND date_creation < DATE_SUB(NOW(), INTERVAL 24 HOUR)
         AND id NOT IN (
-          SELECT DISTINCT problematique_id 
+          SELECT DISTINCT CAST(SUBSTRING(message, LOCATE('problème #', message) + 11, 10) AS UNSIGNED)
           FROM tbl_alertes 
           WHERE type = 'warning' 
           AND message LIKE '%problème non résolu%'
@@ -110,10 +110,10 @@ class AlertSystem {
   async checkOverdueTasks() {
     try {
       const tasks = await sequelize.query(`
-        SELECT id, titre, date_echeance
+        SELECT id, titre, date_limite
         FROM tbl_taches 
         WHERE statut != 'Terminée' 
-        AND date_echeance < NOW()
+        AND date_limite < NOW()
         AND id NOT IN (
           SELECT DISTINCT CAST(SUBSTRING(message, LOCATE('tâche #', message) + 7, 10) AS UNSIGNED)
           FROM tbl_alertes 
@@ -128,7 +128,7 @@ class AlertSystem {
       for (const task of tasks) {
         await this.createAlert({
           titre: 'Tâche en retard',
-          message: `La tâche "${task.titre}" est en retard (échéance: ${task.date_echeance})`,
+          message: `La tâche "${task.titre}" est en retard (échéance: ${task.date_limite})`,
           type: 'error',
           priorite: 'haute',
           statut: 'active'
@@ -147,7 +147,7 @@ class AlertSystem {
   async checkLowStock() {
     try {
       const lowStock = await sequelize.query(`
-        SELECT id, nom_article, quantite
+        SELECT id, nom, quantite
         FROM tbl_inventaire 
         WHERE quantite <= 5
         AND id NOT IN (
@@ -164,7 +164,7 @@ class AlertSystem {
       for (const item of lowStock) {
         await this.createAlert({
           titre: 'Stock faible',
-          message: `L'article "${item.nom_article}" a un stock faible (${item.quantite} unités)`,
+          message: `L'article "${item.nom}" a un stock faible (${item.quantite} unités)`,
           type: 'warning',
           priorite: 'normale',
           statut: 'active'
@@ -183,15 +183,15 @@ class AlertSystem {
   async checkOverduePayments() {
     try {
       const overduePayments = await sequelize.query(`
-        SELECT id, montant, date_echeance
+        SELECT id, date_rappel
         FROM tbl_rappels_paiement 
-        WHERE statut != 'Payé' 
-        AND date_echeance < NOW()
+        WHERE statut != 'Traité' 
+        AND date_rappel < NOW()
         AND id NOT IN (
-          SELECT DISTINCT CAST(SUBSTRING(message, LOCATE('paiement #', message) + 10, 10) AS UNSIGNED)
+          SELECT DISTINCT CAST(SUBSTRING(message, LOCATE('rappel #', message) + 9, 10) AS UNSIGNED)
           FROM tbl_alertes 
           WHERE type = 'error' 
-          AND message LIKE '%paiement en retard%'
+          AND message LIKE '%rappel en retard%'
           AND statut = 'active'
         )
       `, {
@@ -200,8 +200,8 @@ class AlertSystem {
 
       for (const payment of overduePayments) {
         await this.createAlert({
-          titre: 'Paiement en retard',
-          message: `Un paiement de ${payment.montant} est en retard (échéance: ${payment.date_echeance})`,
+          titre: 'Rappel de paiement en retard',
+          message: `Un rappel de paiement est en retard (date: ${payment.date_rappel})`,
           type: 'error',
           priorite: 'haute',
           statut: 'active'
@@ -209,7 +209,7 @@ class AlertSystem {
       }
 
       if (overduePayments.length > 0) {
-        console.log(`⚠️ ${overduePayments.length} paiements en retard détectés`);
+        console.log(`⚠️ ${overduePayments.length} rappels de paiement en retard détectés`);
       }
     } catch (error) {
       console.error('❌ Erreur lors de la vérification des paiements:', error);

@@ -16,14 +16,17 @@ router.get('/', async (req, res) => {
     const suivis = await sequelize.query(`
       SELECT 
         sm.*,
-        p.titre as probleme_titre,
-        p.description as probleme_description,
-        u.nom as technicien_nom,
-        u.prenom as technicien_prenom
-      FROM tbl_suivis_maintenances sm
-      LEFT JOIN tbl_problematiques p ON sm.problematique_id = p.id
-      LEFT JOIN tbl_utilisateurs u ON sm.technicien_id = u.id
-      ORDER BY sm.date_intervention DESC
+        c.numero as chambre_numero,
+        c.type as chambre_type,
+        u_resp.nom as responsable_nom,
+        u_resp.prenom as responsable_prenom,
+        u_creat.nom as createur_nom,
+        u_creat.prenom as createur_prenom
+      FROM tbl_suivi_maintenances sm
+      LEFT JOIN tbl_chambres c ON sm.chambre_id = c.id
+      LEFT JOIN tbl_utilisateurs u_resp ON sm.responsable_id = u_resp.id
+      LEFT JOIN tbl_utilisateurs u_creat ON sm.createur_id = u_creat.id
+      ORDER BY sm.date_creation DESC
     `, {
       type: sequelize.QueryTypes.SELECT
     });
@@ -45,12 +48,12 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/suivis-maintenances - Créer un nouveau suivi de maintenance
-router.post('/', requireRole(['Superviseur', 'Maintenance', 'Administrateur']), [
-  body('problematique_id').isInt({ min: 1 }).withMessage('ID problématique requis'),
-  body('technicien_id').isInt({ min: 1 }).withMessage('ID technicien requis'),
-  body('date_intervention').isISO8601().withMessage('Date d\'intervention requise'),
-  body('type_intervention').notEmpty().withMessage('Type d\'intervention requis'),
-  body('statut').isIn(['Planifiée', 'En cours', 'Terminée', 'Reportée']).withMessage('Statut invalide')
+router.post('/', requireRole(['Superviseur', 'Agent de maintenance', 'Administrateur']), [
+  body('titre').notEmpty().withMessage('Le titre est requis'),
+  body('type').isIn(['Maintenance', 'Réparation', 'Inspection', 'Préventive', 'Corrective']).withMessage('Type invalide'),
+  body('priorite').isIn(['Basse', 'Normale', 'Haute', 'Urgente']).withMessage('Priorité invalide'),
+  body('statut').isIn(['Planifiée', 'En cours', 'En attente', 'Terminée', 'Annulée']).withMessage('Statut invalide'),
+  body('createur_id').isInt({ min: 1 }).withMessage('ID créateur requis')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -65,28 +68,36 @@ router.post('/', requireRole(['Superviseur', 'Maintenance', 'Administrateur']), 
     console.log('🔍 Création d\'un nouveau suivi de maintenance...');
     
     const {
-      problematique_id,
-      technicien_id,
-      date_intervention,
-      type_intervention,
+      titre,
+      description,
+      type,
+      priorite,
       statut,
-      description_intervention,
-      duree_intervention,
-      pieces_utilisees,
-      cout_intervention
+      responsable_id,
+      chambre_id,
+      createur_id,
+      date_planifiee,
+      date_debut,
+      date_fin,
+      cout_estime,
+      cout_reel,
+      materiel_utilise,
+      notes
     } = req.body;
 
     const result = await sequelize.query(`
-      INSERT INTO tbl_suivis_maintenances (
-        problematique_id, technicien_id, date_intervention, type_intervention,
-        statut, description_intervention, duree_intervention, pieces_utilisees,
-        cout_intervention, created_by, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      INSERT INTO tbl_suivi_maintenances (
+        titre, description, type, priorite, statut, responsable_id, chambre_id,
+        createur_id, date_planifiee, date_debut, date_fin, cout_estime, cout_reel,
+        materiel_utilise, notes, date_creation
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `, {
       replacements: [
-        problematique_id, technicien_id, date_intervention, type_intervention,
-        statut, description_intervention || null, duree_intervention || null,
-        pieces_utilisees || null, cout_intervention || null, req.user.id
+        titre, description || null, type, priorite, statut,
+        responsable_id || null, chambre_id || null, createur_id,
+        date_planifiee || null, date_debut || null, date_fin || null,
+        cout_estime || null, cout_reel || null, materiel_utilise || null,
+        notes || null
       ],
       type: sequelize.QueryTypes.INSERT
     });
@@ -109,8 +120,8 @@ router.post('/', requireRole(['Superviseur', 'Maintenance', 'Administrateur']), 
 });
 
 // PUT /api/suivis-maintenances/:id - Modifier un suivi de maintenance
-router.put('/:id', requireRole(['Superviseur', 'Maintenance', 'Administrateur']), [
-  body('statut').optional().isIn(['Planifiée', 'En cours', 'Terminée', 'Reportée']).withMessage('Statut invalide')
+router.put('/:id', requireRole(['Superviseur', 'Agent de maintenance', 'Administrateur']), [
+  body('statut').optional().isIn(['Planifiée', 'En cours', 'En attente', 'Terminée', 'Annulée']).withMessage('Statut invalide')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -125,27 +136,36 @@ router.put('/:id', requireRole(['Superviseur', 'Maintenance', 'Administrateur'])
     console.log('🔍 Modification du suivi de maintenance:', req.params.id);
     
     const {
-      date_intervention,
-      type_intervention,
+      titre,
+      description,
+      type,
+      priorite,
       statut,
-      description_intervention,
-      duree_intervention,
-      pieces_utilisees,
-      cout_intervention
+      responsable_id,
+      chambre_id,
+      date_planifiee,
+      date_debut,
+      date_fin,
+      cout_estime,
+      cout_reel,
+      materiel_utilise,
+      notes
     } = req.body;
 
     await sequelize.query(`
-      UPDATE tbl_suivis_maintenances SET
-        date_intervention = ?, type_intervention = ?, statut = ?,
-        description_intervention = ?, duree_intervention = ?, pieces_utilisees = ?,
-        cout_intervention = ?, updated_by = ?, updated_at = NOW()
+      UPDATE tbl_suivi_maintenances SET
+        titre = ?, description = ?, type = ?, priorite = ?, statut = ?,
+        responsable_id = ?, chambre_id = ?, date_planifiee = ?, date_debut = ?,
+        date_fin = ?, cout_estime = ?, cout_reel = ?, materiel_utilise = ?,
+        notes = ?, date_modification = NOW()
       WHERE id = ?
     `, {
       replacements: [
-        date_intervention, type_intervention, statut,
-        description_intervention || null, duree_intervention || null,
-        pieces_utilisees || null, cout_intervention || null,
-        req.user.id, req.params.id
+        titre, description || null, type, priorite, statut,
+        responsable_id || null, chambre_id || null, date_planifiee || null,
+        date_debut || null, date_fin || null, cout_estime || null,
+        cout_reel || null, materiel_utilise || null, notes || null,
+        req.params.id
       ],
       type: sequelize.QueryTypes.UPDATE
     });

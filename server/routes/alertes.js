@@ -20,13 +20,13 @@ router.get('/', async (req, res) => {
         u.prenom as utilisateur_prenom
       FROM tbl_alertes a
       LEFT JOIN tbl_utilisateurs u ON a.utilisateur_id = u.id
-      ORDER BY a.date_creation DESC
+      ORDER BY a.created_at DESC
     `, {
       type: sequelize.QueryTypes.SELECT
     });
 
     console.log('✅ Alertes récupérées:', alertes.length);
-    
+
     res.json({
       success: true,
       alertes: alertes
