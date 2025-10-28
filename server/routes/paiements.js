@@ -525,7 +525,7 @@ router.get('/reports/financial', async (req, res) => {
     const caisses = await sequelize.query(`
       SELECT id, nom, devise, solde_actuel as solde
       FROM tbl_caisses 
-      WHERE actif = 1
+      WHERE statut = 'Active'
     `, {
       type: sequelize.QueryTypes.SELECT
     });
