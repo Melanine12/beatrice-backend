@@ -515,7 +515,6 @@ router.get('/reports/financial', async (req, res) => {
         e.date_paiement,
         e.description,
         e.beneficiaire,
-        e.numero_cheque,
         e.created_at,
         e.updated_at,
         c.id as caisse_id,
