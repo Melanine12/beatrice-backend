@@ -520,7 +520,6 @@ router.get('/reports/financial', async (req, res) => {
         c.id as caisse_id,
         c.nom as caisse_nom,
         c.devise as caisse_devise,
-        c.code as caisse_code,
         u.id as utilisateur_id,
         u.prenom,
         u.nom,
