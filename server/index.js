@@ -424,7 +424,7 @@ async function startServer() {
       console.log(`💾 Database: ${sequelize.getDatabaseName()}`);
       console.log(`👥 Max connections: ${sequelize.connectionManager.config.pool.max}`);
       
-      // Système d'alertes désactivé (pas d'impact sur tbl_alertes)
+      // Alert system removed
     });
 
     // Handle server errors
