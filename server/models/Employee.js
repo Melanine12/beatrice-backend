@@ -22,6 +22,7 @@ class Employee {
     this.nationalite = data.nationalite;
     this.numero_securite_sociale = data.numero_securite_sociale;
     this.situation_famille = data.situation_famille;
+    this.employeur_direct = data.employeur_direct;
     
     // Coordonnées et Contact
     this.adresse = data.adresse;
@@ -61,12 +62,12 @@ class Employee {
     const query = `
       INSERT INTO tbl_employes (
         civilite, nom_famille, nom_usage, prenoms, date_naissance, lieu_naissance, nationalite,
-        numero_securite_sociale, situation_famille, adresse, code_postal, ville, pays,
+        numero_securite_sociale, situation_famille, employeur_direct, adresse, code_postal, ville, pays,
         telephone_personnel, telephone_domicile, email_personnel, contact_urgence_nom,
         contact_urgence_prenom, contact_urgence_lien, contact_urgence_telephone, matricule,
         poste, departement_id, sous_departement_id, date_embauche, type_contrat, date_fin_contrat, temps_travail,
         statut, niveau_classification, photo_url, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const values = [
@@ -79,6 +80,7 @@ class Employee {
       employeeData.nationalite || null, 
       employeeData.numero_securite_sociale || null, 
       employeeData.situation_famille || null,
+      employeeData.employeur_direct || null,
       employeeData.adresse || null, 
       employeeData.code_postal || null, 
       employeeData.ville || null, 
@@ -189,7 +191,7 @@ class Employee {
     const query = `
       UPDATE tbl_employes SET
         civilite = ?, nom_famille = ?, nom_usage = ?, prenoms = ?, date_naissance = ?,
-        lieu_naissance = ?, nationalite = ?, numero_securite_sociale = ?, situation_famille = ?,
+        lieu_naissance = ?, nationalite = ?, numero_securite_sociale = ?, situation_famille = ?, employeur_direct = ?,
         adresse = ?, code_postal = ?, ville = ?, pays = ?, telephone_personnel = ?,
         telephone_domicile = ?, email_personnel = ?, contact_urgence_nom = ?,
         contact_urgence_prenom = ?, contact_urgence_lien = ?, contact_urgence_telephone = ?,
@@ -202,7 +204,7 @@ class Employee {
     const values = [
       employeeData.civilite, employeeData.nom_famille, employeeData.nom_usage,
       employeeData.prenoms, employeeData.date_naissance, employeeData.lieu_naissance,
-      employeeData.nationalite, employeeData.numero_securite_sociale, employeeData.situation_famille,
+      employeeData.nationalite, employeeData.numero_securite_sociale, employeeData.situation_famille, employeeData.employeur_direct,
       employeeData.adresse, employeeData.code_postal, employeeData.ville, employeeData.pays,
       employeeData.telephone_personnel, employeeData.telephone_domicile, employeeData.email_personnel,
       employeeData.contact_urgence_nom, employeeData.contact_urgence_prenom, employeeData.contact_urgence_lien,
@@ -253,6 +255,7 @@ class Employee {
       nationalite: 'nationalite',
       numero_securite_sociale: 'numero_securite_sociale',
       situation_famille: 'situation_famille',
+      employeur_direct: 'employeur_direct',
       adresse: 'adresse',
       code_postal: 'code_postal',
       ville: 'ville',
