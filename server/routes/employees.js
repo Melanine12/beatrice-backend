@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Employee = require('../models/Employee');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 const { CloudinaryService, upload } = require('../services/cloudinaryService');
 const fs = require('fs');
 const path = require('path');
@@ -136,7 +136,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // POST /api/employees - Créer un nouvel employé
-router.post('/', authenticateToken, upload.single('photo'), validateEmployeeData, async (req, res) => {
+router.post('/', authenticateToken, requireRole(['Superviseur RH', 'Administrateur', 'Patron']), upload.single('photo'), validateEmployeeData, async (req, res) => {
   try {
     // Vérifier si l'email existe déjà
     const existingEmployee = await Employee.findAll({ search: req.body.email_personnel });
@@ -198,7 +198,7 @@ router.post('/', authenticateToken, upload.single('photo'), validateEmployeeData
 });
 
 // PUT /api/employees/:id - Mettre à jour un employé
-router.put('/:id', authenticateToken, upload.single('photo'), validateEmployeeUpdateData, async (req, res) => {
+router.put('/:id', authenticateToken, requireRole(['Superviseur RH', 'Administrateur', 'Patron']), upload.single('photo'), validateEmployeeUpdateData, async (req, res) => {
   try {
     // Vérifier si l'employé existe
     const existingEmployee = await Employee.findById(req.params.id);
@@ -290,7 +290,7 @@ router.put('/:id', authenticateToken, upload.single('photo'), validateEmployeeUp
 });
 
 // DELETE /api/employees/:id - Supprimer un employé
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole(['Superviseur RH', 'Administrateur', 'Patron']), async (req, res) => {
   try {
     // Vérifier si l'employé existe
     const existingEmployee = await Employee.findById(req.params.id);
