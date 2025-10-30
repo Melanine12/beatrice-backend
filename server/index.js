@@ -54,9 +54,7 @@ const pointagesRoutes = require('./routes/pointages');
 const presencesDashboardRoutes = require('./routes/presences-dashboard');
 const reportsRoutes = require('./routes/reports');
 const suivisMaintenancesRoutes = require('./routes/suivis-maintenances');
-const alertesRoutes = require('./routes/alertes');
 const menusRoutes = require('./routes/menus');
-const alertSystem = require('./services/alertSystem');
 
 const app = express();
 // Socket.io for realtime notifications
@@ -248,7 +246,6 @@ app.use('/api/pointages', pointagesRoutes);
 app.use('/api/presences-dashboard', presencesDashboardRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/suivis-maintenances', suivisMaintenancesRoutes);
-app.use('/api/alertes', alertesRoutes);
 app.use('/api/menus', menusRoutes);
 
 // Health check endpoint
@@ -427,13 +424,7 @@ async function startServer() {
       console.log(`💾 Database: ${sequelize.getDatabaseName()}`);
       console.log(`👥 Max connections: ${sequelize.connectionManager.config.pool.max}`);
       
-      // Démarrer le système d'alertes automatiques
-      alertSystem.start();
-      
-      // Nettoyer les anciennes alertes au démarrage
-      setTimeout(() => {
-        alertSystem.cleanupOldAlerts();
-      }, 5000); // Attendre 5 secondes après le démarrage
+      // Système d'alertes désactivé (pas d'impact sur tbl_alertes)
     });
 
     // Handle server errors
