@@ -281,11 +281,24 @@ class Employee {
       updated_by: 'updated_by'
     };
 
+    // Normaliser les dates (YYYY-MM-DD) pour les colonnes DATE MySQL
+    const dateFieldKeys = new Set(['date_naissance', 'date_embauche', 'date_fin_contrat']);
+
     // Ajouter seulement les champs fournis
     Object.keys(employeeData).forEach(key => {
       if (employeeData[key] !== undefined && fieldMapping[key]) {
+        let value = employeeData[key];
+        if (value && dateFieldKeys.has(key)) {
+          try {
+            // Accepte Date, string ISO ou 'YYYY-MM-DD'; tronque à 10 chars
+            const iso = (value instanceof Date) ? value.toISOString() : String(value);
+            value = iso.slice(0, 10);
+          } catch (_) {
+            // Si parsing échoue, laisse passer la valeur telle quelle
+          }
+        }
         fields.push(`${fieldMapping[key]} = ?`);
-        values.push(employeeData[key] || null);
+        values.push(value || null);
       }
     });
 
