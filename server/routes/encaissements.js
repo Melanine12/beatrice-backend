@@ -49,7 +49,8 @@ router.post('/', requireRole(['Administrateur', 'Superviseur Comptable', 'Caissi
   body('devise').notEmpty().withMessage('La devise est requise'),
   body('type_paiement').notEmpty().withMessage('Le type de paiement est requis'),
   body('statut').notEmpty().withMessage('Le statut est requis'),
-  body('date_paiement').isISO8601().withMessage('La date de paiement est requise')
+  body('date_paiement').isISO8601().withMessage('La date de paiement est requise'),
+  body('caisse_id').isInt({ min: 1 }).withMessage('La caisse est requise')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -104,7 +105,7 @@ router.post('/', requireRole(['Administrateur', 'Superviseur Comptable', 'Caissi
       replacements: [
         reference, montant, devise, type_paiement, statut, date_paiement,
         description || null, beneficiaire || null, user_guichet_id || utilisateur_id, req.user.id,
-        caisse_id || null, numero_cheque || null
+        caisse_id, numero_cheque || null
       ],
       type: sequelize.QueryTypes.INSERT
     });
@@ -162,9 +163,9 @@ router.put('/:id', requireRole(['Administrateur', 'Superviseur Comptable', 'Cais
       numero_cheque
     } = req.body;
 
-    // Vérifier que l'encaissement existe
+    // Vérifier que l'encaissement existe et récupérer la caisse actuelle
     const existingEncaissement = await sequelize.query(`
-      SELECT id FROM tbl_encaissements WHERE id = ?
+      SELECT id, encaissement_caisse_id FROM tbl_encaissements WHERE id = ?
     `, {
       replacements: [req.params.id],
       type: sequelize.QueryTypes.SELECT
@@ -192,6 +193,18 @@ router.put('/:id', requireRole(['Administrateur', 'Superviseur Comptable', 'Cais
       });
     }
 
+    // Déterminer la caisse à utiliser (nouvelle valeur ou valeur existante)
+    const encaissementCaisseId = (typeof caisse_id !== 'undefined' && caisse_id !== null) 
+      ? caisse_id 
+      : existingEncaissement[0].encaissement_caisse_id;
+
+    if (!encaissementCaisseId) {
+      return res.status(400).json({
+        success: false,
+        message: 'La caisse de l\'encaissement est requise'
+      });
+    }
+
     // Mettre à jour l'encaissement
     await sequelize.query(`
       UPDATE tbl_encaissements SET
@@ -204,7 +217,7 @@ router.put('/:id', requireRole(['Administrateur', 'Superviseur Comptable', 'Cais
       replacements: [
         reference, montant, devise, type_paiement, statut, date_paiement,
         description || null, beneficiaire || null, user_guichet_id || utilisateur_id,
-        caisse_id || null, numero_cheque || null,
+        encaissementCaisseId, numero_cheque || null,
         req.user.id, req.params.id
       ],
       type: sequelize.QueryTypes.UPDATE
