@@ -47,7 +47,7 @@ router.get('/', [
   query('type').optional().isIn(['Chambre', 'Bureau administratif', 'Salle de fête', 'Salle de réunion', 'Restaurant', 'Bar', 'Spa', 'Gym', 'Parking', 'Piscine', 'Jardin', 'Terrasse', 'Cuisine', 'Entrepôt', 'Autre']),
   query('etage').optional().isInt({ min: 0, max: 50 }),
   query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 })
+  query('limit').optional().isInt({ min: 1, max: 1000 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -59,19 +59,23 @@ router.get('/', [
       });
     }
 
-    const { statut, type, etage, page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
-
+    const { statut, type, etage, page = 1, limit } = req.query;
+    
     // Build where clause
     const whereClause = {};
     if (statut) whereClause.statut = statut;
     if (type) whereClause.type = type;
     if (etage) whereClause.etage = etage;
 
+    // Si limit est fourni et élevé (>100), permettre jusqu'à 1000 pour les sélecteurs
+    const parsedLimit = limit ? parseInt(limit) : 20;
+    const effectiveLimit = parsedLimit > 100 ? Math.min(parsedLimit, 1000) : parsedLimit;
+    const offset = page ? (parseInt(page) - 1) * effectiveLimit : 0;
+
     const { count, rows: chambres } = await Chambre.findAndCountAll({
       where: whereClause,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit: effectiveLimit,
+      offset: offset,
       order: [['numero', 'ASC']]
     });
 
