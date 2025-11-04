@@ -1,4 +1,5 @@
 const { DataTypes } = require('sequelize');
+const { getPrestationPeriod, getDaysInPrestationPeriod } = require('../utils/dateUtils');
 
 module.exports = (sequelize) => {
   const Pointage = sequelize.define('Pointage', {
@@ -171,8 +172,8 @@ module.exports = (sequelize) => {
 
   // Méthodes statiques
   Pointage.getPointagesByMonth = async function(year, month, employeId = null) {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
+    // Utiliser la période de prestation RH (21 du mois précédent au 20 du mois en cours)
+    const { startDate, endDate } = getPrestationPeriod(year, month);
     
     const whereClause = {
       date_pointage: {
@@ -208,9 +209,8 @@ module.exports = (sequelize) => {
   };
 
   Pointage.getStatsByMonth = async function(year, month, employeId = null) {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
-    const daysInMonth = endDate.getDate();
+    // Utiliser la période de prestation RH (21 du mois précédent au 20 du mois en cours)
+    const { startDate, endDate, totalDays } = getPrestationPeriod(year, month);
     
     const whereClause = {
       date_pointage: {
@@ -242,7 +242,7 @@ module.exports = (sequelize) => {
     });
     
     return {
-      totalDays: daysInMonth,
+      totalDays: totalDays,
       stats: stats.map(stat => ({
         employe: stat.Employe,
         totalPointages: parseInt(stat.dataValues.total_pointages),

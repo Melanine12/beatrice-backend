@@ -4,6 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { Employee } = require('../models');
 const { Pointage } = require('../models');
 const { Op } = require('sequelize');
+const { getPrestationPeriod, getPrestationPeriodName, getPrestationPeriodDescription } = require('../utils/dateUtils');
 
 // Apply authentication to all routes
 router.use(authenticateToken);
@@ -20,14 +21,15 @@ router.get('/stats', async (req, res) => {
       order: [['nom_famille', 'ASC'], ['prenoms', 'ASC']]
     });
 
-    // Récupérer les statistiques des pointages pour le mois
-    const dateDebut = new Date(year, month - 1, 1);
-    const dateFin = new Date(year, month, 0, 23, 59, 59);
+    // Utiliser la période de prestation RH (21 du mois précédent au 20 du mois en cours)
+    const period = getPrestationPeriod(parseInt(year), parseInt(month));
+    const periodName = getPrestationPeriodName(parseInt(year), parseInt(month));
+    const periodDescription = getPrestationPeriodDescription(parseInt(year), parseInt(month));
     
     const pointages = await Pointage.findAll({
       where: {
         date_pointage: {
-          [Op.between]: [dateDebut, dateFin]
+          [Op.between]: [period.startDate, period.endDate]
         }
       },
       attributes: ['employe_id', 'present', 'date_pointage']
@@ -35,7 +37,7 @@ router.get('/stats', async (req, res) => {
 
     // Calculer les statistiques
     const totalEmployes = employes.length;
-    const totalJoursMois = new Date(year, month, 0).getDate();
+    const totalJoursMois = period.totalDays;
     
     // Compter les présences par employé
     const presencesParEmploye = {};
@@ -83,7 +85,13 @@ router.get('/stats', async (req, res) => {
         mois: {
           annee: parseInt(year),
           mois: parseInt(month),
-          nom: new Date(year, month - 1).toLocaleDateString('fr-FR', { month: 'long' })
+          nom: periodName,
+          description: periodDescription,
+          periode_prestation: {
+            date_debut: period.startDate.toISOString().split('T')[0],
+            date_fin: period.endDate.toISOString().split('T')[0],
+            total_jours: period.totalDays
+          }
         }
       }
     });
@@ -139,14 +147,14 @@ router.get('/pointages/:employe_id', async (req, res) => {
     const { employe_id } = req.params;
     const { year = new Date().getFullYear(), month = new Date().getMonth() + 1 } = req.query;
     
-    const dateDebut = new Date(year, month - 1, 1);
-    const dateFin = new Date(year, month, 0, 23, 59, 59);
+    // Utiliser la période de prestation RH (21 du mois précédent au 20 du mois en cours)
+    const period = getPrestationPeriod(parseInt(year), parseInt(month));
     
     const pointages = await Pointage.findAll({
       where: {
         employe_id: parseInt(employe_id),
         date_pointage: {
-          [Op.between]: [dateDebut, dateFin]
+          [Op.between]: [period.startDate, period.endDate]
         }
       },
       attributes: ['id', 'date_pointage', 'present', 'heure_arrivee', 'heure_depart', 'commentaires'],

@@ -3,6 +3,7 @@ const { body, param, query, validationResult } = require('express-validator');
 const { Pointage, User, Employe } = require('../models');
 const { Op } = require('sequelize');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { getPrestationPeriod, getPrestationPeriodName, getPrestationPeriodDescription } = require('../utils/dateUtils');
 const router = express.Router();
 
 // Middleware d'authentification pour toutes les routes
@@ -115,9 +116,17 @@ router.get('/mois/:year/:month', [
     const { year, month } = req.params;
     const { employe_id } = req.query;
 
+    const yearInt = parseInt(year);
+    const monthInt = parseInt(month);
+    
+    // Obtenir la période de prestation
+    const period = getPrestationPeriod(yearInt, monthInt);
+    const periodName = getPrestationPeriodName(yearInt, monthInt);
+    const periodDescription = getPrestationPeriodDescription(yearInt, monthInt);
+
     const pointages = await Pointage.getPointagesByMonth(
-      parseInt(year), 
-      parseInt(month), 
+      yearInt, 
+      monthInt, 
       employe_id ? parseInt(employe_id) : null
     );
 
@@ -125,9 +134,15 @@ router.get('/mois/:year/:month', [
       success: true,
       data: pointages,
       mois: {
-        annee: parseInt(year),
-        mois: parseInt(month),
-        nom: new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('fr-FR', { month: 'long' })
+        annee: yearInt,
+        mois: monthInt,
+        nom: periodName,
+        description: periodDescription,
+        periode_prestation: {
+          date_debut: period.startDate.toISOString().split('T')[0],
+          date_fin: period.endDate.toISOString().split('T')[0],
+          total_jours: period.totalDays
+        }
       }
     });
 
@@ -159,15 +174,32 @@ router.get('/stats/:year/:month', [
     const { year, month } = req.params;
     const { employe_id } = req.query;
 
+    const yearInt = parseInt(year);
+    const monthInt = parseInt(month);
+    
+    // Obtenir la période de prestation
+    const period = getPrestationPeriod(yearInt, monthInt);
+    const periodName = getPrestationPeriodName(yearInt, monthInt);
+    const periodDescription = getPrestationPeriodDescription(yearInt, monthInt);
+
     const stats = await Pointage.getStatsByMonth(
-      parseInt(year), 
-      parseInt(month), 
+      yearInt, 
+      monthInt, 
       employe_id ? parseInt(employe_id) : null
     );
 
     res.json({
       success: true,
-      data: stats
+      data: {
+        ...stats,
+        periode_prestation: {
+          nom: periodName,
+          description: periodDescription,
+          date_debut: period.startDate.toISOString().split('T')[0],
+          date_fin: period.endDate.toISOString().split('T')[0],
+          total_jours: period.totalDays
+        }
+      }
     });
 
   } catch (error) {
