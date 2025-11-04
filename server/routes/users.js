@@ -23,7 +23,7 @@ router.get('/', [
   query('departement_id').optional().isInt({ min: 1 }),
   query('sous_departement_id').optional().isInt({ min: 1 }),
   query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 })
+  query('limit').optional().isInt({ min: 1, max: 10000 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
