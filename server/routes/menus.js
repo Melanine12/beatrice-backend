@@ -59,7 +59,8 @@ const MENU_CONFIG = {
     'dashboard', 'problematiques', 'taches', 'notifications'
   ],
   'Auditeur': [
-    'dashboard', 'rapports', 'depenses', 'encaissements', 'caisses', 'demandes'
+    'dashboard', 'rapports', 'depenses', 'encaissements', 'caisses', 'demandes',
+    'problematiques', 'taches', 'inventaire'
   ]
 };
 
