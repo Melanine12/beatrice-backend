@@ -61,13 +61,63 @@ router.get('/stats', async (req, res) => {
         const resolvedIssues = await Problematique.count({ where: { statut: 'Résolue' } });
         const urgentIssues = await Problematique.count({ where: { priorite: 'Urgente' } });
         
+        // Daily statistics for issues
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const todayCreated = await Problematique.count({
+          where: {
+            date_creation: {
+              [Op.gte]: today,
+              [Op.lt]: tomorrow
+            }
+          }
+        });
+        
+        const todayResolved = await Problematique.count({
+          where: {
+            statut: 'Résolue',
+            date_resolution: {
+              [Op.gte]: today,
+              [Op.lt]: tomorrow
+            }
+          }
+        });
+        
+        const todayUrgent = await Problematique.count({
+          where: {
+            priorite: 'Urgente',
+            date_creation: {
+              [Op.gte]: today,
+              [Op.lt]: tomorrow
+            }
+          }
+        });
+        
+        const todayInProgress = await Problematique.count({
+          where: {
+            statut: 'En cours',
+            date_creation: {
+              [Op.gte]: today,
+              [Op.lt]: tomorrow
+            }
+          }
+        });
+        
         return {
           total: totalIssues,
           open: openIssues,
           inProgress: inProgressIssues,
           resolved: resolvedIssues,
           urgent: urgentIssues,
-          resolutionRate: totalIssues > 0 ? ((resolvedIssues / totalIssues) * 100).toFixed(2) : 0
+          resolutionRate: totalIssues > 0 ? ((resolvedIssues / totalIssues) * 100).toFixed(2) : 0,
+          today: todayCreated,
+          todayCreated: todayCreated,
+          todayResolved: todayResolved,
+          todayUrgent: todayUrgent,
+          todayInProgress: todayInProgress
         };
       })(),
 
@@ -85,6 +135,53 @@ router.get('/stats', async (req, res) => {
           }
         });
         
+        // Daily statistics for tasks
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const todayCreated = await Tache.count({
+          where: {
+            date_creation: {
+              [Op.gte]: today,
+              [Op.lt]: tomorrow
+            }
+          }
+        });
+        
+        const todayCompleted = await Tache.count({
+          where: {
+            statut: 'Terminée',
+            date_fin: {
+              [Op.gte]: today,
+              [Op.lt]: tomorrow
+            }
+          }
+        });
+        
+        const todayDue = await Tache.count({
+          where: {
+            date_limite: {
+              [Op.gte]: today,
+              [Op.lt]: tomorrow
+            },
+            statut: {
+              [Op.ne]: 'Terminée'
+            }
+          }
+        });
+        
+        const todayInProgress = await Tache.count({
+          where: {
+            statut: 'En cours',
+            date_creation: {
+              [Op.gte]: today,
+              [Op.lt]: tomorrow
+            }
+          }
+        });
+        
         return {
           total: totalTasks,
           pending: pendingTasks,
@@ -92,7 +189,12 @@ router.get('/stats', async (req, res) => {
           completed: completedTasks,
           urgent: urgentTasks,
           overdue: overdueTasks,
-          completionRate: totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(2) : 0
+          completionRate: totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(2) : 0,
+          today: todayCreated,
+          todayCreated: todayCreated,
+          todayCompleted: todayCompleted,
+          todayDue: todayDue,
+          todayInProgress: todayInProgress
         };
       })(),
 
