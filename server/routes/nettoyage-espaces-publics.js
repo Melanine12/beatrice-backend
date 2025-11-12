@@ -424,11 +424,22 @@ router.delete('/:id', async (req, res) => {
 
 // PATCH /api/nettoyage-espaces-publics/:id/status - Update status
 router.patch('/:id/status', [
-  body('statut').isIn(['En cours', 'Terminé', 'Validé', 'Rejeté'])
+  body('statut')
+    .notEmpty()
+    .withMessage('Le statut est requis')
+    .isIn(['En cours', 'Terminé', 'Validé', 'Rejeté'])
+    .withMessage('Le statut doit être l\'un des suivants: En cours, Terminé, Validé, Rejeté')
 ], async (req, res) => {
   try {
+    console.log('🔄 Update status request:', {
+      id: req.params.id,
+      body: req.body,
+      user: req.user?.id
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.error('❌ Validation errors:', errors.array());
       return res.status(400).json({ 
         error: 'Validation failed',
         message: 'Statut invalide',
@@ -439,19 +450,26 @@ router.patch('/:id/status', [
     const { id } = req.params;
     const { statut } = req.body;
     
+    console.log('📋 Updating nettoyage:', { id, statut });
+    
     const nettoyage = await NettoyageEspacesPublics.findByPk(id);
 
     if (!nettoyage) {
+      console.error('❌ Nettoyage not found:', id);
       return res.status(404).json({ 
         error: 'Public space cleaning not found',
         message: 'Nettoyage d\'espace public non trouvé'
       });
     }
 
+    console.log('✅ Nettoyage found, current status:', nettoyage.statut);
+    
     await nettoyage.update({ 
       statut: statut,
       updated_by: req.user.id
     });
+
+    console.log('✅ Status updated successfully');
 
     res.json({
       success: true,
@@ -460,10 +478,12 @@ router.patch('/:id/status', [
     });
 
   } catch (error) {
-    console.error('Update status error:', error);
+    console.error('❌ Update status error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       error: 'Failed to update status',
-      message: 'Erreur lors de la mise à jour du statut'
+      message: 'Erreur lors de la mise à jour du statut',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
