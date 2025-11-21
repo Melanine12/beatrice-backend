@@ -670,6 +670,30 @@ router.post('/', [
       problematique.dataValues.images = uploadedImages;
     }
 
+    // Envoyer une notification push à tous les utilisateurs ayant l'application mobile connectée
+    try {
+      const notification = {
+        title: '🚨 Nouvelle problématique créée',
+        body: `${problematique.titre} - Priorité: ${problematique.priorite}`,
+        type: 'problematique_created',
+        problematiqueId: problematique.id,
+        priority: problematique.priorite,
+        data: {
+          action: 'view_problematique',
+          problematique_type: problematique.type,
+          chambre_id: problematique.chambre_id?.toString() || '',
+          departement_id: problematique.departement_id?.toString() || '',
+          created_by: req.user.prenom + ' ' + req.user.nom
+        }
+      };
+
+      const notificationResult = await pushNotificationService.sendNotificationToAll(notification);
+      console.log(`📱 Notification push envoyée: ${notificationResult.successCount}/${notificationResult.totalTokens} appareils`);
+    } catch (notificationError) {
+      // Ne pas bloquer la création si l'envoi de notification échoue
+      console.error('⚠️ Erreur lors de l\'envoi de la notification push:', notificationError);
+    }
+
     res.status(201).json({
       message: 'Problématique créée avec succès',
       problematique,

@@ -342,6 +342,113 @@ class PushNotificationService {
       throw error;
     }
   }
+
+  // Envoyer une notification à tous les utilisateurs ayant l'application mobile connectée
+  async sendNotificationToAll(notification) {
+    try {
+      if (!this.isInitialized()) {
+        console.warn('⚠️ Firebase non initialisé - Notification non envoyée');
+        return { success: false, reason: 'Firebase not initialized' };
+      }
+
+      // Récupérer tous les tokens actifs
+      const devices = await DeviceToken.findAll({
+        where: { is_active: true },
+        attributes: ['device_token']
+      });
+
+      if (devices.length === 0) {
+        console.log('⚠️ Aucun appareil actif trouvé');
+        return { success: false, reason: 'No active devices', successCount: 0, failureCount: 0, totalTokens: 0 };
+      }
+
+      const tokens = devices.map(device => device.device_token);
+      console.log(`📱 Envoi de notification à ${tokens.length} appareil(s)`);
+
+      // Firebase limite les messages multicast à 500 tokens par requête
+      // Diviser en lots si nécessaire
+      const batchSize = 500;
+      let totalSuccess = 0;
+      let totalFailure = 0;
+
+      for (let i = 0; i < tokens.length; i += batchSize) {
+        const batch = tokens.slice(i, i + batchSize);
+        
+        const message = {
+          notification: {
+            title: notification.title,
+            body: notification.body
+          },
+          data: {
+            type: notification.type || 'broadcast',
+            problematique_id: notification.problematiqueId?.toString() || '',
+            priority: notification.priority || 'normal',
+            ...notification.data
+          },
+          tokens: batch,
+          android: {
+            priority: 'high',
+            notification: {
+              icon: 'ic_notification',
+              color: '#FF6B35',
+              sound: 'default',
+              channel_id: 'hotel_beatrice_channel'
+            }
+          },
+          apns: {
+            payload: {
+              aps: {
+                sound: 'default',
+                badge: 1
+              }
+            }
+          }
+        };
+
+        try {
+          const response = await admin.messaging().sendMulticast(message);
+          totalSuccess += response.successCount;
+          totalFailure += response.failureCount;
+          
+          console.log(`📱 Lot ${Math.floor(i / batchSize) + 1}: ${response.successCount}/${batch.length} notifications envoyées`);
+          
+          // Désactiver les tokens invalides
+          if (response.failureCount > 0) {
+            const failedTokens = [];
+            response.responses.forEach((resp, idx) => {
+              if (!resp.success) {
+                failedTokens.push(batch[idx]);
+                console.log(`❌ Token invalide: ${batch[idx].substring(0, 20)}... - ${resp.error?.code}`);
+              }
+            });
+            
+            if (failedTokens.length > 0) {
+              await DeviceToken.update(
+                { is_active: false },
+                { where: { device_token: failedTokens } }
+              );
+              console.log(`🗑️ ${failedTokens.length} tokens invalides désactivés`);
+            }
+          }
+        } catch (batchError) {
+          console.error(`❌ Erreur lors de l'envoi du lot ${Math.floor(i / batchSize) + 1}:`, batchError);
+          totalFailure += batch.length;
+        }
+      }
+
+      console.log(`📢 Notification broadcast envoyée: ${totalSuccess}/${tokens.length} succès`);
+      
+      return {
+        success: true,
+        successCount: totalSuccess,
+        failureCount: totalFailure,
+        totalTokens: tokens.length
+      };
+    } catch (error) {
+      console.error('❌ Erreur notification broadcast:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new PushNotificationService();

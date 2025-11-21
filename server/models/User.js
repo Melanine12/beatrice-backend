@@ -43,7 +43,7 @@ const User = sequelize.define('User', {
     }
   },
   role: {
-    type: DataTypes.ENUM('Guichetier', 'Agent', 'Web Master', 'Superviseur Stock', 'Superviseur Housing', 'Superviseur Finance', 'Superviseur RH', 'Superviseur', 'Administrateur', 'Patron', 'Auditeur', 'Superviseur Technique', 'Superviseur Resto', 'Superviseur Comptable', 'Agent Exterieur', 'Agent Gouvernant', 'Agent Chambre'),
+    type: DataTypes.ENUM('Guichetier', 'Agent', 'Web Master', 'Superviseur Stock', 'Superviseur Housing', 'Superviseur Finance', 'Superviseur RH', 'Superviseur', 'Administrateur', 'Patron', 'Auditeur', 'Superviseur Technique', 'Superviseur Resto', 'Superviseur Comptable', 'Agent Exterieur', 'Agent Gouvernant', 'Agent Chambre', 'Booker'),
     allowNull: false,
     defaultValue: 'Agent'
   },
