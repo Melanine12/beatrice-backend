@@ -195,20 +195,22 @@ router.post('/', [
     const allowedFields = [
       'nom', 'description', 'code_produit', 'nature', 'categorie', 'sous_categorie',
       'quantite', 'quantite_min', 'unite', 'prix_unitaire', 'fournisseur',
-      'numero_reference', 'emplacement', 'emplacement_id', 'qr_code_article',
+      'numero_reference', 'emplacement', 'emplacement_id', 'etage', 'qr_code_article',
       'statut', 'date_achat', 'date_expiration', 'responsable_id', 'chambre_id',
       'notes', 'tags'
     ];
     
     const filteredData = {};
     allowedFields.forEach(field => {
-      if (req.body[field] !== undefined && req.body[field] !== '') {
-        // Convertir etage en entier si présent
-        if (field === 'etage') {
+      // Traitement spécial pour etage : toujours l'inclure même si vide
+      if (field === 'etage') {
+        if (req.body[field] !== undefined && req.body[field] !== '') {
           filteredData[field] = parseInt(req.body[field]) || null;
         } else {
-          filteredData[field] = req.body[field];
+          filteredData[field] = null; // Toujours inclure etage, même si null
         }
+      } else if (req.body[field] !== undefined && req.body[field] !== '') {
+        filteredData[field] = req.body[field];
       }
     });
 
@@ -284,6 +286,11 @@ router.put('/:id', [
         }
       }
     });
+    
+    // Toujours inclure etage (même si null) pour éviter l'erreur de valeur par défaut lors de la mise à jour
+    if (req.body.etage !== undefined) {
+      filteredData.etage = req.body.etage !== '' ? parseInt(req.body.etage) || null : null;
+    }
 
     await inventaire.update(filteredData);
 
