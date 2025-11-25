@@ -98,20 +98,59 @@ router.get('/:id', async (req, res, next) => {
 
 // POST /api/fournisseurs - Create new supplier
 router.post('/', [
-  body('nom').isLength({ min: 2, max: 255 }),
-  body('email').optional().isEmail(),
-  body('email_contact').optional().isEmail(),
-  body('telephone').optional().isLength({ max: 20 }),
-  body('telephone_contact').optional().isLength({ max: 20 }),
-  body('siret').optional().isLength({ min: 14, max: 14 }),
-  body('tva_intracom').optional().isLength({ max: 20 }),
-  body('statut').optional().isIn(['Actif', 'Inactif', 'En attente']),
-  body('categorie_principale').optional().isIn(['Mobilier', 'Équipement', 'Linge', 'Produits', 'Électronique', 'Décoration', 'Services', 'Autre']),
-  body('evaluation').optional().isInt({ min: 1, max: 5 })
+  body('nom')
+    .trim()
+    .notEmpty()
+    .withMessage('Le nom est requis')
+    .isLength({ min: 2, max: 255 })
+    .withMessage('Le nom doit contenir entre 2 et 255 caractères'),
+  body('email')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isEmail()
+    .withMessage('L\'email doit être une adresse email valide'),
+  body('email_contact')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isEmail()
+    .withMessage('L\'email de contact doit être une adresse email valide'),
+  body('telephone')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('Le téléphone ne doit pas dépasser 20 caractères'),
+  body('telephone_contact')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('Le téléphone de contact ne doit pas dépasser 20 caractères'),
+  body('siret')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 14, max: 14 })
+    .withMessage('Le SIRET doit contenir exactement 14 caractères'),
+  body('tva_intracom')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('Le numéro de TVA intracommunautaire ne doit pas dépasser 20 caractères'),
+  body('statut')
+    .optional({ checkFalsy: true })
+    .isIn(['Actif', 'Inactif', 'En attente'])
+    .withMessage('Le statut doit être Actif, Inactif ou En attente'),
+  body('categorie_principale')
+    .optional({ checkFalsy: true })
+    .isIn(['Mobilier', 'Équipement', 'Linge', 'Produits', 'Électronique', 'Décoration', 'Services', 'Autre'])
+    .withMessage('La catégorie principale n\'est pas valide'),
+  body('evaluation')
+    .optional({ checkFalsy: true })
+    .isInt({ min: 1, max: 5 })
+    .withMessage('L\'évaluation doit être un nombre entre 1 et 5')
 ], async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.error('Validation errors:', errors.array());
       return res.status(400).json({ 
         error: 'Validation failed',
         message: 'Données de validation invalides',
@@ -121,13 +160,34 @@ router.post('/', [
 
     const fournisseurData = { ...req.body };
 
-    // Clean up empty values
+    // Clean up empty values and trim strings
     Object.keys(fournisseurData).forEach(key => {
-      if (fournisseurData[key] === '' || fournisseurData[key] === null) {
+      if (fournisseurData[key] === '' || fournisseurData[key] === null || fournisseurData[key] === undefined) {
         delete fournisseurData[key];
+      } else if (typeof fournisseurData[key] === 'string') {
+        fournisseurData[key] = fournisseurData[key].trim();
+        // Remove empty strings after trimming
+        if (fournisseurData[key] === '') {
+          delete fournisseurData[key];
+        }
       }
     });
 
+    // Ensure statut has a default value if not provided
+    if (!fournisseurData.statut) {
+      fournisseurData.statut = 'Actif';
+    }
+
+    // Remove email fields if they are empty or invalid (Sequelize will validate them)
+    // Only keep email if it's a valid email string
+    if (fournisseurData.email && (!fournisseurData.email.includes('@') || fournisseurData.email.length < 3)) {
+      delete fournisseurData.email;
+    }
+    if (fournisseurData.email_contact && (!fournisseurData.email_contact.includes('@') || fournisseurData.email_contact.length < 3)) {
+      delete fournisseurData.email_contact;
+    }
+
+    console.log('📤 Creating fournisseur with data:', JSON.stringify(fournisseurData, null, 2));
     const fournisseur = await Fournisseur.create(fournisseurData);
 
     res.status(201).json({
