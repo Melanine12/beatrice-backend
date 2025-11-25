@@ -177,6 +177,7 @@ router.post('/', [
   body('nature').optional().isIn(['Consommable', 'Durable', 'Équipement', 'Mobilier', 'Linge', 'Produit d\'entretien', 'Autre']),
   body('sous_categorie').optional().isLength({ max: 100 }).withMessage('La sous-catégorie ne doit pas dépasser 100 caractères'),
   body('emplacement_id').optional().isInt({ min: 1 }).withMessage('L\'ID de l\'emplacement doit être un entier positif'),
+  body('etage').optional().isInt({ min: 0, max: 50 }).withMessage('L\'étage doit être un nombre entre 0 et 50'),
   body('unite').optional().isLength({ min: 1, max: 20 }).withMessage('L\'unité doit contenir entre 1 et 20 caractères'),
   body('qr_code_article').optional().isLength({ max: 255 }).withMessage('Le code QR ne doit pas dépasser 255 caractères')
 ], async (req, res) => {
@@ -190,7 +191,28 @@ router.post('/', [
       });
     }
 
-    const inventaire = await Inventaire.create(req.body);
+    // Filtrer les champs qui n'existent pas dans le modèle
+    const allowedFields = [
+      'nom', 'description', 'code_produit', 'nature', 'categorie', 'sous_categorie',
+      'quantite', 'quantite_min', 'unite', 'prix_unitaire', 'fournisseur',
+      'numero_reference', 'emplacement', 'emplacement_id', 'qr_code_article',
+      'statut', 'date_achat', 'date_expiration', 'responsable_id', 'chambre_id',
+      'notes', 'tags'
+    ];
+    
+    const filteredData = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined && req.body[field] !== '') {
+        // Convertir etage en entier si présent
+        if (field === 'etage') {
+          filteredData[field] = parseInt(req.body[field]) || null;
+        } else {
+          filteredData[field] = req.body[field];
+        }
+      }
+    });
+
+    const inventaire = await Inventaire.create(filteredData);
 
     res.status(201).json({
       success: true,
@@ -220,6 +242,7 @@ router.put('/:id', [
   body('nature').optional().isIn(['Consommable', 'Durable', 'Équipement', 'Mobilier', 'Linge', 'Produit d\'entretien', 'Autre']),
   body('sous_categorie').optional().isLength({ max: 100 }),
   body('emplacement_id').optional().isInt({ min: 1 }),
+  body('etage').optional().isInt({ min: 0, max: 50 }),
   body('unite').optional().isLength({ min: 1, max: 20 }),
   body('qr_code_article').optional().isLength({ max: 255 })
 ], async (req, res) => {
@@ -241,7 +264,28 @@ router.put('/:id', [
       });
     }
 
-    await inventaire.update(req.body);
+    // Filtrer les champs qui n'existent pas dans le modèle
+    const allowedFields = [
+      'nom', 'description', 'code_produit', 'nature', 'categorie', 'sous_categorie',
+      'quantite', 'quantite_min', 'unite', 'prix_unitaire', 'fournisseur',
+      'numero_reference', 'emplacement', 'emplacement_id', 'etage', 'qr_code_article',
+      'statut', 'date_achat', 'date_expiration', 'responsable_id', 'chambre_id',
+      'notes', 'tags'
+    ];
+    
+    const filteredData = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined && req.body[field] !== '') {
+        // Convertir etage en entier si présent
+        if (field === 'etage') {
+          filteredData[field] = parseInt(req.body[field]) || null;
+        } else {
+          filteredData[field] = req.body[field];
+        }
+      }
+    });
+
+    await inventaire.update(filteredData);
 
     res.json({
       success: true,

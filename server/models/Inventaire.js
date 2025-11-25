@@ -89,6 +89,15 @@ const Inventaire = sequelize.define('Inventaire', {
     },
     comment: 'Référence vers l\'entrepôt/dépôt'
   },
+  etage: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    validate: {
+      min: 0,
+      max: 50
+    },
+    comment: 'Étage où se trouve l\'article'
+  },
   qr_code_article: {
     type: DataTypes.STRING(255),
     allowNull: true,
