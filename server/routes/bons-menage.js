@@ -20,7 +20,7 @@ router.get('/', [
   query('date_debut').optional().isISO8601(),
   query('date_fin').optional().isISO8601(),
   query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 })
+  query('limit').optional().isInt({ min: 1, max: 10000 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -58,8 +58,25 @@ router.get('/', [
     // Date range filtering
     if (date_debut || date_fin) {
       whereClause.date_creation = {};
-      if (date_debut) whereClause.date_creation[Op.gte] = new Date(date_debut);
-      if (date_fin) whereClause.date_creation[Op.lte] = new Date(date_fin);
+      if (date_debut) {
+        const dateDebut = new Date(date_debut);
+        // Si c'est juste une date (YYYY-MM-DD), commencer à minuit
+        if (date_debut.length === 10) {
+          dateDebut.setHours(0, 0, 0, 0);
+        }
+        whereClause.date_creation[Op.gte] = dateDebut;
+        console.log('📅 Date début filtrée:', dateDebut.toISOString());
+      }
+      if (date_fin) {
+        const dateFin = new Date(date_fin);
+        // Si c'est juste une date (YYYY-MM-DD), finir à 23:59:59
+        if (date_fin.length === 10 || date_fin.includes('T') === false) {
+          dateFin.setHours(23, 59, 59, 999);
+        }
+        whereClause.date_creation[Op.lte] = dateFin;
+        console.log('📅 Date fin filtrée:', dateFin.toISOString());
+      }
+      console.log('📅 Filtre date_creation:', whereClause.date_creation);
     }
 
     const { count, rows: bonsMenage } = await BonMenage.findAndCountAll({
