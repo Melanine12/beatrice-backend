@@ -477,6 +477,53 @@ router.get('/stats/overview', async (req, res) => {
   }
 });
 
+// GET /api/bons-menage/stats/agents-today - Get today's statistics for all agents
+router.get('/stats/agents-today', async (req, res) => {
+  try {
+    const { Op } = require('sequelize');
+    
+    // Récupérer la date d'aujourd'hui
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    // Compter les bons par utilisateur_id pour aujourd'hui
+    const stats = await BonMenage.findAll({
+      where: {
+        date_creation: {
+          [Op.between]: [today, endOfDay]
+        }
+      },
+      attributes: [
+        'utilisateur_id',
+        [BonMenage.sequelize.fn('COUNT', BonMenage.sequelize.col('id')), 'count']
+      ],
+      group: ['utilisateur_id'],
+      raw: true
+    });
+    
+    // Convertir en objet simple { utilisateur_id: count }
+    const statsMap = {};
+    stats.forEach(stat => {
+      statsMap[stat.utilisateur_id] = parseInt(stat.count);
+    });
+    
+    res.json({
+      success: true,
+      stats: statsMap,
+      date: today.toISOString().split('T')[0]
+    });
+    
+  } catch (error) {
+    console.error('Get agents today stats error:', error);
+    res.status(500).json({ 
+      error: 'Failed to get agents statistics',
+      message: 'Erreur lors de la récupération des statistiques des agents'
+    });
+  }
+});
+
 // GET /api/bons-menage/stats/user/:userId - Get user statistics
 router.get('/stats/user/:userId', [
   query('date_debut').optional().isISO8601(),
