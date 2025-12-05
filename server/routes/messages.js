@@ -533,72 +533,52 @@ router.get('/users/available', async (req, res) => {
     const { search } = req.query;
 
     // Construire la condition where
-    // Récupérer tous les utilisateurs actifs (actif = true ou NULL) sauf l'utilisateur actuel
+    // Récupérer TOUS les utilisateurs sauf l'utilisateur actuel (on filtrera actif après)
     const whereConditions = {
-      [Op.and]: [
-        { id: { [Op.ne]: userId } },
-        {
-          [Op.or]: [
-            { actif: true },
-            { actif: { [Op.is]: null } },
-            { actif: 1 } // Pour MySQL TINYINT(1)
-          ]
-        }
-      ]
+      id: { [Op.ne]: userId }
     };
 
     // Ajouter la recherche si fournie
-    if (search) {
-      whereConditions[Op.and].push({
-        [Op.or]: [
-          { prenom: { [Op.like]: `%${search}%` } },
-          { nom: { [Op.like]: `%${search}%` } },
-          { email: { [Op.like]: `%${search}%` } }
-        ]
-      });
+    if (search && search.trim() !== '') {
+      whereConditions[Op.and] = [
+        {
+          [Op.or]: [
+            { prenom: { [Op.like]: `%${search}%` } },
+            { nom: { [Op.like]: `%${search}%` } },
+            { email: { [Op.like]: `%${search}%` } }
+          ]
+        }
+      ];
     }
 
     console.log('🔍 Recherche d\'utilisateurs:', { userId, search, whereConditions });
 
-    // Essayer d'abord avec la condition actif
+    // Récupérer tous les utilisateurs (sauf l'utilisateur actuel)
     let users = await User.findAll({
       where: whereConditions,
       attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url', 'derniere_connexion', 'actif'],
       order: [['nom', 'ASC'], ['prenom', 'ASC']],
-      limit: 100
+      limit: 1000 // Augmenter la limite pour récupérer tous les utilisateurs
     });
 
-    // Si aucun utilisateur trouvé, essayer sans la condition actif (pour debug)
-    if (users.length === 0) {
-      console.log('⚠️ Aucun utilisateur trouvé avec condition actif, essai sans condition actif...');
-      const whereWithoutActif = {
-        id: { [Op.ne]: userId }
-      };
-      if (search) {
-        whereWithoutActif[Op.and] = [
-          {
-            [Op.or]: [
-              { prenom: { [Op.like]: `%${search}%` } },
-              { nom: { [Op.like]: `%${search}%` } },
-              { email: { [Op.like]: `%${search}%` } }
-            ]
-          }
-        ];
-      }
-      const allUsers = await User.findAll({
-        where: whereWithoutActif,
-        attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url', 'derniere_connexion', 'actif'],
-        order: [['nom', 'ASC'], ['prenom', 'ASC']],
-        limit: 100
-      });
-      console.log(`📊 ${allUsers.length} utilisateur(s) trouvé(s) sans condition actif`);
-      console.log('📊 Exemples d\'utilisateurs:', allUsers.slice(0, 3).map(u => ({ id: u.id, nom: u.nom, prenom: u.prenom, actif: u.actif })));
-      
-      // Filtrer manuellement les utilisateurs actifs
-      users = allUsers.filter(u => u.actif === true || u.actif === 1 || u.actif === null);
-      console.log(`✅ ${users.length} utilisateur(s) actif(s) après filtrage manuel`);
-    } else {
-      console.log(`✅ ${users.length} utilisateur(s) trouvé(s) avec condition actif`);
+    console.log(`📊 ${users.length} utilisateur(s) trouvé(s) au total`);
+
+    // Filtrer manuellement les utilisateurs actifs (actif = true, 1, ou NULL)
+    users = users.filter(u => {
+      const isActive = u.actif === true || u.actif === 1 || u.actif === null || u.actif === undefined;
+      return isActive;
+    });
+
+    console.log(`✅ ${users.length} utilisateur(s) actif(s) après filtrage`);
+    
+    if (users.length > 0) {
+      console.log('📋 Exemples d\'utilisateurs:', users.slice(0, 5).map(u => ({ 
+        id: u.id, 
+        nom: u.nom, 
+        prenom: u.prenom, 
+        actif: u.actif,
+        role: u.role
+      })));
     }
 
     // Formater les utilisateurs pour le frontend
