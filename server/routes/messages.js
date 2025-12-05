@@ -459,25 +459,38 @@ router.get('/users/available', async (req, res) => {
     const userId = req.user.id;
     const { search } = req.query;
 
-    const where = {
+    // Construire la condition where
+    const whereConditions = {
       id: { [Op.ne]: userId },
-      actif: { [Op.ne]: false }
+      [Op.or]: [
+        { actif: true },
+        { actif: { [Op.is]: null } }
+      ]
     };
 
+    // Ajouter la recherche si fournie
     if (search) {
-      where[Op.or] = [
-        { prenom: { [Op.like]: `%${search}%` } },
-        { nom: { [Op.like]: `%${search}%` } },
-        { email: { [Op.like]: `%${search}%` } }
+      whereConditions[Op.and] = [
+        {
+          [Op.or]: [
+            { prenom: { [Op.like]: `%${search}%` } },
+            { nom: { [Op.like]: `%${search}%` } },
+            { email: { [Op.like]: `%${search}%` } }
+          ]
+        }
       ];
     }
 
+    console.log('🔍 Recherche d\'utilisateurs:', { userId, search, whereConditions });
+
     const users = await User.findAll({
-      where,
+      where: whereConditions,
       attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url', 'derniere_connexion'],
       order: [['nom', 'ASC'], ['prenom', 'ASC']],
       limit: 100
     });
+
+    console.log(`✅ ${users.length} utilisateur(s) trouvé(s)`);
 
     // Formater les utilisateurs pour le frontend
     const formattedUsers = users.map(user => ({
