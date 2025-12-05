@@ -13,67 +13,116 @@ router.use(authenticateToken);
 router.get('/conversations', async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log('📥 Récupération des conversations pour userId:', userId);
     
-    const conversations = await Conversation.findAll({
-      where: {
-        [Op.or]: [
-          { user1_id: userId },
-          { user2_id: userId }
-        ]
-      },
-      include: [
-        {
-          model: User,
-          as: 'user1',
-          attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url']
+    // Vérifier que les modèles sont bien chargés
+    if (!Conversation || !User || !Message) {
+      console.error('❌ Modèles non chargés:', { Conversation: !!Conversation, User: !!User, Message: !!Message });
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur de configuration des modèles'
+      });
+    }
+    
+    let conversations;
+    try {
+      // Essayer d'abord sans les includes pour voir si le problème vient des associations
+      conversations = await Conversation.findAll({
+        where: {
+          [Op.or]: [
+            { user1_id: userId },
+            { user2_id: userId }
+          ]
         },
-        {
-          model: User,
-          as: 'user2',
-          attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url']
-        },
-        {
-          model: Message,
-          as: 'lastMessage',
-          attributes: ['id', 'content', 'created_at', 'sender_id']
+        order: [
+          ['last_message_at', 'DESC'],
+          ['created_at', 'DESC']
+        ],
+        raw: false // Garder les instances Sequelize pour les includes
+      });
+      console.log(`✅ ${conversations.length} conversation(s) trouvée(s) sans includes`);
+      
+      // Charger les utilisateurs séparément pour éviter les problèmes d'association
+      for (const conv of conversations) {
+        try {
+          const user1 = await User.findByPk(conv.user1_id, {
+            attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url']
+          });
+          const user2 = await User.findByPk(conv.user2_id, {
+            attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url']
+          });
+          conv.user1 = user1;
+          conv.user2 = user2;
+        } catch (userError) {
+          console.error('Erreur lors du chargement des utilisateurs pour conversation', conv.id, ':', userError);
         }
-      ],
-      order: [['last_message_at', 'DESC']]
-    });
+      }
+    } catch (queryError) {
+      console.error('❌ Erreur lors de la requête Conversation.findAll:', queryError);
+      console.error('Stack:', queryError.stack);
+      throw queryError;
+    }
+
+    // Charger le dernier message pour chaque conversation séparément
+    for (const conv of conversations) {
+      if (conv.last_message_id) {
+        try {
+          const lastMsg = await Message.findByPk(conv.last_message_id, {
+            attributes: ['id', 'content', 'created_at', 'sender_id']
+          });
+          conv.lastMessage = lastMsg;
+        } catch (err) {
+          console.error('Erreur lors du chargement du dernier message:', err);
+          conv.lastMessage = null;
+        }
+      } else {
+        conv.lastMessage = null;
+      }
+    }
 
     // Formater les conversations pour le frontend
-    const formattedConversations = conversations.map(conv => {
-      const otherUser = conv.user1_id === userId ? conv.user2 : conv.user1;
-      const unreadCount = conv.user1_id === userId ? conv.user1_unread_count : conv.user2_unread_count;
-      
-      return {
-        id: conv.id,
-        user: {
-          id: otherUser.id,
-          prenom: otherUser.prenom,
-          nom: otherUser.nom,
-          email: otherUser.email,
-          role: otherUser.role,
-          photo_url: otherUser.photo_url
-        },
-        lastMessage: conv.lastMessage ? {
-          content: conv.lastMessage.content,
-          timestamp: conv.lastMessage.created_at
-        } : null,
-        lastMessageTime: conv.last_message_at ? new Date(conv.last_message_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null,
-        unreadCount: unreadCount || 0
-      };
-    });
+    const formattedConversations = conversations
+      .map(conv => {
+        const otherUser = conv.user1_id === userId ? conv.user2 : conv.user1;
+        const unreadCount = conv.user1_id === userId ? conv.user1_unread_count : conv.user2_unread_count;
+        
+        // Vérifier que otherUser existe
+        if (!otherUser) {
+          console.warn('⚠️ Conversation sans autre utilisateur:', conv.id, 'user1_id:', conv.user1_id, 'user2_id:', conv.user2_id);
+          return null;
+        }
+        
+        return {
+          id: conv.id,
+          user: {
+            id: otherUser.id,
+            prenom: otherUser.prenom,
+            nom: otherUser.nom,
+            email: otherUser.email,
+            role: otherUser.role,
+            photo_url: otherUser.photo_url
+          },
+          lastMessage: conv.lastMessage ? {
+            content: conv.lastMessage.content,
+            timestamp: conv.lastMessage.created_at
+          } : null,
+          lastMessageTime: conv.last_message_at ? new Date(conv.last_message_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null,
+          unreadCount: unreadCount || 0
+        };
+      })
+      .filter(conv => conv !== null); // Filtrer les conversations invalides
 
     res.json({
       success: true,
       data: formattedConversations
     });
   } catch (error) {
-    console.error('Erreur lors de la récupération des conversations:', error);
+    console.error('❌ Erreur lors de la récupération des conversations:', error);
+    console.error('Stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la récupération des conversations'
+      message: 'Erreur lors de la récupération des conversations',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -460,37 +509,73 @@ router.get('/users/available', async (req, res) => {
     const { search } = req.query;
 
     // Construire la condition where
+    // Récupérer tous les utilisateurs actifs (actif = true ou NULL) sauf l'utilisateur actuel
     const whereConditions = {
-      id: { [Op.ne]: userId },
-      [Op.or]: [
-        { actif: true },
-        { actif: { [Op.is]: null } }
+      [Op.and]: [
+        { id: { [Op.ne]: userId } },
+        {
+          [Op.or]: [
+            { actif: true },
+            { actif: { [Op.is]: null } },
+            { actif: 1 } // Pour MySQL TINYINT(1)
+          ]
+        }
       ]
     };
 
     // Ajouter la recherche si fournie
     if (search) {
-      whereConditions[Op.and] = [
-        {
-          [Op.or]: [
-            { prenom: { [Op.like]: `%${search}%` } },
-            { nom: { [Op.like]: `%${search}%` } },
-            { email: { [Op.like]: `%${search}%` } }
-          ]
-        }
-      ];
+      whereConditions[Op.and].push({
+        [Op.or]: [
+          { prenom: { [Op.like]: `%${search}%` } },
+          { nom: { [Op.like]: `%${search}%` } },
+          { email: { [Op.like]: `%${search}%` } }
+        ]
+      });
     }
 
     console.log('🔍 Recherche d\'utilisateurs:', { userId, search, whereConditions });
 
-    const users = await User.findAll({
+    // Essayer d'abord avec la condition actif
+    let users = await User.findAll({
       where: whereConditions,
-      attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url', 'derniere_connexion'],
+      attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url', 'derniere_connexion', 'actif'],
       order: [['nom', 'ASC'], ['prenom', 'ASC']],
       limit: 100
     });
 
-    console.log(`✅ ${users.length} utilisateur(s) trouvé(s)`);
+    // Si aucun utilisateur trouvé, essayer sans la condition actif (pour debug)
+    if (users.length === 0) {
+      console.log('⚠️ Aucun utilisateur trouvé avec condition actif, essai sans condition actif...');
+      const whereWithoutActif = {
+        id: { [Op.ne]: userId }
+      };
+      if (search) {
+        whereWithoutActif[Op.and] = [
+          {
+            [Op.or]: [
+              { prenom: { [Op.like]: `%${search}%` } },
+              { nom: { [Op.like]: `%${search}%` } },
+              { email: { [Op.like]: `%${search}%` } }
+            ]
+          }
+        ];
+      }
+      const allUsers = await User.findAll({
+        where: whereWithoutActif,
+        attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url', 'derniere_connexion', 'actif'],
+        order: [['nom', 'ASC'], ['prenom', 'ASC']],
+        limit: 100
+      });
+      console.log(`📊 ${allUsers.length} utilisateur(s) trouvé(s) sans condition actif`);
+      console.log('📊 Exemples d\'utilisateurs:', allUsers.slice(0, 3).map(u => ({ id: u.id, nom: u.nom, prenom: u.prenom, actif: u.actif })));
+      
+      // Filtrer manuellement les utilisateurs actifs
+      users = allUsers.filter(u => u.actif === true || u.actif === 1 || u.actif === null);
+      console.log(`✅ ${users.length} utilisateur(s) actif(s) après filtrage manuel`);
+    } else {
+      console.log(`✅ ${users.length} utilisateur(s) trouvé(s) avec condition actif`);
+    }
 
     // Formater les utilisateurs pour le frontend
     const now = new Date();
