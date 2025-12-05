@@ -63,10 +63,18 @@ const http = require('http').createServer(app);
 const { Server } = require('socket.io');
 const io = new Server(http, {
   cors: {
-    origin: ['https://hotelbeatricesys.com', 'http://localhost:3000', 'http://localhost:3001'],
+    origin: [
+      'https://hotelbeatricesys.com',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://beatrice-frontend.onrender.com',
+      process.env.FRONTEND_URL || '*'
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-  }
+  },
+  transports: ['websocket', 'polling'], // Forcer les transports disponibles
+  allowEIO3: true // Compatibilité avec les anciennes versions
 });
 app.set('io', io);
 
