@@ -14,8 +14,11 @@ router.get('/', authenticateToken, async (req, res) => {
     if (type) where.type = type;
     if (demandeur_id) where.demandeur_id = demandeur_id;
     
-    // Si l'utilisateur n'est pas superviseur, ne montrer que ses demandes
-    if (req.user.role === 'Agent') {
+    // Déterminer les rôles qui peuvent voir toutes les demandes
+    const canViewAll = ['Patron', 'Auditeur', 'Superviseur Finance'].includes(req.user.role);
+    
+    // Si l'utilisateur n'est pas dans les rôles autorisés, ne montrer que ses demandes
+    if (!canViewAll) {
       where.demandeur_id = req.user.id;
     }
     
@@ -105,7 +108,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
     }
     
     // Vérifier les permissions
-    if (req.user.role === 'Agent' && demande.demandeur_id !== req.user.id) {
+    // Seuls Patron, Auditeur et Superviseur Finance peuvent voir toutes les demandes
+    const canViewAll = ['Patron', 'Auditeur', 'Superviseur Finance'].includes(req.user.role);
+    if (!canViewAll && demande.demandeur_id !== req.user.id) {
       return res.status(403).json({ 
         success: false, 
         message: 'Accès non autorisé' 
@@ -223,7 +228,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
     
     // Vérifier les permissions
-    if (req.user.role === 'Agent' && demande.demandeur_id !== req.user.id) {
+    // Seuls Patron, Auditeur et Superviseur Finance peuvent voir toutes les demandes
+    const canViewAll = ['Patron', 'Auditeur', 'Superviseur Finance'].includes(req.user.role);
+    if (!canViewAll && demande.demandeur_id !== req.user.id) {
       return res.status(403).json({ 
         success: false, 
         message: 'Accès non autorisé' 
@@ -463,7 +470,9 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
     
     // Vérifier les permissions
-    if (req.user.role === 'Agent' && demande.demandeur_id !== req.user.id) {
+    // Seuls Patron, Auditeur et Superviseur Finance peuvent voir toutes les demandes
+    const canViewAll = ['Patron', 'Auditeur', 'Superviseur Finance'].includes(req.user.role);
+    if (!canViewAll && demande.demandeur_id !== req.user.id) {
       return res.status(403).json({ 
         success: false, 
         message: 'Accès non autorisé' 
