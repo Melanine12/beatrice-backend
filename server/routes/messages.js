@@ -46,10 +46,10 @@ router.get('/conversations', async (req, res) => {
       for (const conv of conversations) {
         try {
           const user1 = await User.findByPk(conv.user1_id, {
-            attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url']
+            attributes: ['id', 'prenom', 'nom', 'email', 'role']
           });
           const user2 = await User.findByPk(conv.user2_id, {
-            attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url']
+            attributes: ['id', 'prenom', 'nom', 'email', 'role']
           });
           conv.user1 = user1;
           conv.user2 = user2;
@@ -124,7 +124,7 @@ router.get('/conversations', async (req, res) => {
             nom: otherUser.nom,
             email: otherUser.email,
             role: otherUser.role,
-            photo_url: otherUser.photo_url
+            photo_url: null // La colonne photo_url n'existe pas dans tbl_utilisateurs
           },
           lastMessage: conv.lastMessage ? {
             content: conv.lastMessage.content,
@@ -185,12 +185,12 @@ router.get('/conversation/:userId', async (req, res) => {
         {
           model: User,
           as: 'user1',
-          attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         },
         {
           model: User,
           as: 'user2',
-          attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url']
+          attributes: ['id', 'prenom', 'nom', 'email', 'role']
         }
       ]
     });
@@ -208,12 +208,12 @@ router.get('/conversation/:userId', async (req, res) => {
           {
             model: User,
             as: 'user1',
-            attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url']
+            attributes: ['id', 'prenom', 'nom', 'email', 'role']
           },
           {
             model: User,
             as: 'user2',
-            attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url']
+            attributes: ['id', 'prenom', 'nom', 'email', 'role']
           }
         ]
       });
@@ -231,7 +231,7 @@ router.get('/conversation/:userId', async (req, res) => {
           nom: otherUserData.nom,
           email: otherUserData.email,
           role: otherUserData.role,
-          photo_url: otherUserData.photo_url
+          photo_url: null // La colonne photo_url n'existe pas dans tbl_utilisateurs
         }
       }
     });
@@ -287,7 +287,7 @@ router.get('/:conversationId', [
         {
           model: User,
           as: 'sender',
-          attributes: ['id', 'prenom', 'nom', 'email', 'photo_url']
+          attributes: ['id', 'prenom', 'nom', 'email']
         }
       ],
       order: [['created_at', 'DESC']],
@@ -408,7 +408,7 @@ router.post('/', [
         {
           model: User,
           as: 'sender',
-          attributes: ['id', 'prenom', 'nom', 'email', 'photo_url']
+          attributes: ['id', 'prenom', 'nom', 'email']
         }
       ]
     });
@@ -555,9 +555,10 @@ router.get('/users/available', async (req, res) => {
 
     // Récupérer TOUS les utilisateurs (sauf l'utilisateur actuel) - sans filtre actif
     // L'utilisateur veut voir tous les utilisateurs du système pour démarrer une conversation
+    // Note: photo_url n'existe pas dans tbl_utilisateurs, donc on ne l'inclut pas
     let users = await User.findAll({
       where: whereConditions,
-      attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url', 'derniere_connexion', 'actif'],
+      attributes: ['id', 'prenom', 'nom', 'email', 'role', 'derniere_connexion', 'actif'],
       order: [['nom', 'ASC'], ['prenom', 'ASC']],
       limit: 10000 // Limite élevée pour récupérer tous les utilisateurs
     });
@@ -626,7 +627,7 @@ router.get('/users/available', async (req, res) => {
         nom: user.nom,
         email: user.email,
         role: user.role,
-        photo_url: user.photo_url,
+        photo_url: null, // La colonne photo_url n'existe pas dans tbl_utilisateurs
         status: status,
         lastSeen: lastSeen,
         derniere_connexion: user.derniere_connexion
