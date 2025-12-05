@@ -493,16 +493,54 @@ router.get('/users/available', async (req, res) => {
     console.log(`✅ ${users.length} utilisateur(s) trouvé(s)`);
 
     // Formater les utilisateurs pour le frontend
-    const formattedUsers = users.map(user => ({
-      id: user.id,
-      prenom: user.prenom,
-      nom: user.nom,
-      email: user.email,
-      role: user.role,
-      photo_url: user.photo_url,
-      status: user.derniere_connexion && new Date(user.derniere_connexion) > new Date(Date.now() - 5 * 60 * 1000) ? 'online' : 'offline',
-      lastSeen: user.derniere_connexion ? new Date(user.derniere_connexion).toLocaleString('fr-FR') : 'Jamais'
-    }));
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const formattedUsers = users.map(user => {
+      const lastConnection = user.derniere_connexion ? new Date(user.derniere_connexion) : null;
+      
+      // Déterminer le statut
+      let status = 'offline';
+      let lastSeen = 'Jamais connecté';
+      
+      if (lastConnection) {
+        if (lastConnection > fiveMinutesAgo) {
+          status = 'online';
+          lastSeen = 'En ligne';
+        } else if (lastConnection > oneHourAgo) {
+          status = 'away';
+          const minutesAgo = Math.floor((now - lastConnection) / (60 * 1000));
+          lastSeen = `Il y a ${minutesAgo} minute${minutesAgo > 1 ? 's' : ''}`;
+        } else if (lastConnection > oneDayAgo) {
+          status = 'away';
+          const hoursAgo = Math.floor((now - lastConnection) / (60 * 60 * 1000));
+          lastSeen = `Il y a ${hoursAgo} heure${hoursAgo > 1 ? 's' : ''}`;
+        } else {
+          status = 'offline';
+          lastSeen = lastConnection.toLocaleDateString('fr-FR', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
+      }
+
+      return {
+        id: user.id,
+        prenom: user.prenom,
+        nom: user.nom,
+        email: user.email,
+        role: user.role,
+        photo_url: user.photo_url,
+        status: status,
+        lastSeen: lastSeen,
+        derniere_connexion: user.derniere_connexion
+      };
+    });
 
     res.json({
       success: true,
