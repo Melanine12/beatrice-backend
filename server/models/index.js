@@ -46,6 +46,8 @@ const NettoyageChambre = require('./NettoyageChambre')(sequelize);
 const Encaissement = require('./Encaissement')(sequelize);
 const Pointage = require('./Pointage')(sequelize);
 const SuiviMaintenance = require('./SuiviMaintenance')(sequelize);
+const Conversation = require('./Conversation')(sequelize);
+const Message = require('./Message')(sequelize);
 // Alerte model removed
 
 // Associations pour les problématiques
@@ -586,6 +588,21 @@ SuiviMaintenance.belongsTo(User, { foreignKey: 'responsable_id', as: 'responsabl
 User.hasMany(SuiviMaintenance, { foreignKey: 'createur_id', as: 'MaintenancesCreees' });
 SuiviMaintenance.belongsTo(User, { foreignKey: 'createur_id', as: 'createur' });
 
+// Associations pour les conversations et messages
+User.hasMany(Conversation, { foreignKey: 'user1_id', as: 'ConversationsUser1' });
+User.hasMany(Conversation, { foreignKey: 'user2_id', as: 'ConversationsUser2' });
+
+User.hasMany(Message, { foreignKey: 'sender_id', as: 'MessagesEnvoyes' });
+User.hasMany(Message, { foreignKey: 'receiver_id', as: 'MessagesRecus' });
+
+// Initialiser les associations des modèles
+if (Conversation.associate) {
+  Conversation.associate({ User, Message });
+}
+if (Message.associate) {
+  Message.associate({ User, Conversation });
+}
+
 // Alert associations removed
 
 module.exports = {
@@ -636,5 +653,7 @@ module.exports = {
   Encaissement,
   Pointage,
   SuiviMaintenance,
+  Conversation,
+  Message,
   // Alerte removed
 }; 

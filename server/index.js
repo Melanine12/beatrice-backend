@@ -55,6 +55,7 @@ const presencesDashboardRoutes = require('./routes/presences-dashboard');
 const reportsRoutes = require('./routes/reports');
 const suivisMaintenancesRoutes = require('./routes/suivis-maintenances');
 const menusRoutes = require('./routes/menus');
+const messagesRoutes = require('./routes/messages');
 
 const app = express();
 // Socket.io for realtime notifications
@@ -68,6 +69,52 @@ const io = new Server(http, {
   }
 });
 app.set('io', io);
+
+// Socket.io connection handling for chat
+io.use((socket, next) => {
+  // Authentification via token dans le handshake
+  const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
+  if (!token) {
+    return next(new Error('Authentication error'));
+  }
+  
+  // Vérifier le token
+  try {
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      return next(new Error('JWT_SECRET not configured'));
+    }
+    const decoded = jwt.verify(token, JWT_SECRET);
+    // Le token peut avoir userId ou id selon la structure
+    socket.userId = decoded.userId || decoded.id;
+    socket.user = decoded;
+    next();
+  } catch (err) {
+    console.error('Socket.io authentication error:', err.message);
+    next(new Error('Authentication error'));
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log(`✅ User ${socket.userId} connected to chat`);
+  
+  // Rejoindre la room de l'utilisateur
+  socket.join(`user_${socket.userId}`);
+  
+  // Émettre l'événement de connexion
+  socket.emit('connected', { userId: socket.userId });
+  
+  // Gérer la déconnexion
+  socket.on('disconnect', () => {
+    console.log(`❌ User ${socket.userId} disconnected from chat`);
+  });
+  
+  // Gérer les erreurs
+  socket.on('error', (error) => {
+    console.error(`Socket error for user ${socket.userId}:`, error);
+  });
+});
 
 const PORT = process.env.PORT || 5002;
 
@@ -247,6 +294,7 @@ app.use('/api/presences-dashboard', presencesDashboardRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/suivis-maintenances', suivisMaintenancesRoutes);
 app.use('/api/menus', menusRoutes);
+app.use('/api/messages', messagesRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
