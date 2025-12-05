@@ -58,7 +58,31 @@ router.get('/conversations', async (req, res) => {
         }
       }
     } catch (queryError) {
+      // Si c'est une erreur de table manquante, retourner une liste vide
+      const errorMessage = queryError.message || '';
+      const originalCode = queryError.original?.code || '';
+      const originalMessage = queryError.original?.message || '';
+      
+      if (queryError.name === 'SequelizeDatabaseError' && 
+          (errorMessage.includes("doesn't exist") || 
+           errorMessage.includes("Unknown table") ||
+           errorMessage.includes("Table") && errorMessage.includes("doesn't exist") ||
+           originalCode === 'ER_NO_SUCH_TABLE' ||
+           originalMessage.includes("doesn't exist") ||
+           originalMessage.includes("Unknown table"))) {
+        console.warn('⚠️ Tables de chat non trouvées. Migration nécessaire.');
+        console.warn('⚠️ Erreur:', originalMessage || errorMessage);
+        return res.json({
+          success: true,
+          data: []
+        });
+      }
+      
       console.error('❌ Erreur lors de la requête Conversation.findAll:', queryError);
+      console.error('❌ Nom:', queryError.name);
+      console.error('❌ Message:', errorMessage);
+      console.error('❌ Code original:', originalCode);
+      console.error('❌ Message original:', originalMessage);
       console.error('Stack:', queryError.stack);
       throw queryError;
     }
