@@ -133,6 +133,66 @@ router.get('/stats/overview', [
   }
 });
 
+// GET /api/users/connections/today - Get users connected today
+router.get('/connections/today', async (req, res) => {
+  try {
+    const { Op } = require('sequelize');
+    
+    // Récupérer la date d'aujourd'hui (début et fin de journée)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    // Récupérer tous les utilisateurs connectés aujourd'hui
+    const usersConnectedToday = await User.findAll({
+      where: {
+        derniere_connexion: {
+          [Op.between]: [today, endOfDay]
+        },
+        actif: true
+      },
+      attributes: [
+        'id',
+        'nom',
+        'prenom',
+        'email',
+        'role',
+        'derniere_connexion',
+        'telephone',
+        'actif'
+      ],
+      include: [
+        {
+          model: require('../models/Departement'),
+          as: 'Departement',
+          attributes: ['id', 'nom', 'code']
+        },
+        {
+          model: require('../models/SousDepartement'),
+          as: 'SousDepartement',
+          attributes: ['id', 'nom', 'code']
+        }
+      ],
+      order: [['derniere_connexion', 'DESC']]
+    });
+    
+    res.json({
+      success: true,
+      users: usersConnectedToday,
+      count: usersConnectedToday.length,
+      date: today.toISOString().split('T')[0]
+    });
+    
+  } catch (error) {
+    console.error('Get users connected today error:', error);
+    res.status(500).json({ 
+      error: 'Failed to get users connected today',
+      message: 'Erreur lors de la récupération des utilisateurs connectés aujourd\'hui'
+    });
+  }
+});
+
 // GET /api/users/:id - Get specific user
 router.get('/:id', async (req, res) => {
   try {
