@@ -553,32 +553,34 @@ router.get('/users/available', async (req, res) => {
 
     console.log('🔍 Recherche d\'utilisateurs:', { userId, search, whereConditions });
 
-    // Récupérer tous les utilisateurs (sauf l'utilisateur actuel)
+    // Récupérer TOUS les utilisateurs (sauf l'utilisateur actuel) - sans filtre actif
+    // L'utilisateur veut voir tous les utilisateurs du système pour démarrer une conversation
     let users = await User.findAll({
       where: whereConditions,
       attributes: ['id', 'prenom', 'nom', 'email', 'role', 'photo_url', 'derniere_connexion', 'actif'],
       order: [['nom', 'ASC'], ['prenom', 'ASC']],
-      limit: 1000 // Augmenter la limite pour récupérer tous les utilisateurs
+      limit: 10000 // Limite élevée pour récupérer tous les utilisateurs
     });
 
-    console.log(`📊 ${users.length} utilisateur(s) trouvé(s) au total`);
-
-    // Filtrer manuellement les utilisateurs actifs (actif = true, 1, ou NULL)
-    users = users.filter(u => {
-      const isActive = u.actif === true || u.actif === 1 || u.actif === null || u.actif === undefined;
-      return isActive;
-    });
-
-    console.log(`✅ ${users.length} utilisateur(s) actif(s) après filtrage`);
+    console.log(`📊 ${users.length} utilisateur(s) trouvé(s) au total (tous les utilisateurs)`);
     
     if (users.length > 0) {
-      console.log('📋 Exemples d\'utilisateurs:', users.slice(0, 5).map(u => ({ 
+      console.log('📋 Exemples d\'utilisateurs:', users.slice(0, 10).map(u => ({ 
         id: u.id, 
         nom: u.nom, 
         prenom: u.prenom, 
         actif: u.actif,
-        role: u.role
+        role: u.role,
+        email: u.email
       })));
+      
+      // Statistiques
+      const actifs = users.filter(u => u.actif === true || u.actif === 1).length;
+      const inactifs = users.filter(u => u.actif === false || u.actif === 0).length;
+      const sansStatut = users.filter(u => u.actif === null || u.actif === undefined).length;
+      console.log(`📈 Statistiques: ${actifs} actifs, ${inactifs} inactifs, ${sansStatut} sans statut`);
+    } else {
+      console.warn('⚠️ Aucun utilisateur trouvé dans la base de données (sauf l\'utilisateur actuel)');
     }
 
     // Formater les utilisateurs pour le frontend
@@ -631,15 +633,24 @@ router.get('/users/available', async (req, res) => {
       };
     });
 
+    console.log(`✅ ${formattedUsers.length} utilisateur(s) formaté(s) et prêt(s) à être envoyés`);
+    
     res.json({
       success: true,
       data: formattedUsers
     });
   } catch (error) {
-    console.error('Erreur lors de la récupération des utilisateurs:', error);
+    console.error('❌ Erreur lors de la récupération des utilisateurs:', error);
+    console.error('❌ Stack:', error.stack);
+    console.error('❌ Détails:', {
+      name: error.name,
+      message: error.message,
+      original: error.original
+    });
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la récupération des utilisateurs'
+      message: 'Erreur lors de la récupération des utilisateurs',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
