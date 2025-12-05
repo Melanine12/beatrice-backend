@@ -312,16 +312,45 @@ router.get('/stats', async (req, res) => {
         let employesPresents = 0;
         try {
           // La table pointages stocke seulement la date (sans heure)
-          const todayDate = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
-          employesPresents = await Pointage.count({
-            where: {
-              present: true,
-              date_pointage: todayDate
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const todayDate = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
+          
+          // Utiliser une requête SQL brute pour être sûr que ça fonctionne
+          // Compter les employés distincts qui sont présents aujourd'hui
+          const result = await sequelize.query(
+            `SELECT COUNT(DISTINCT employe_id) as count 
+             FROM tbl_pointages 
+             WHERE date_pointage = :todayDate 
+             AND present = 1`,
+            {
+              replacements: { todayDate: todayDate },
+              type: sequelize.QueryTypes.SELECT
             }
-          });
+          );
+          
+          employesPresents = result[0]?.count || 0;
+          
           console.log('📊 Employés présents aujourd\'hui:', employesPresents, 'pour la date:', todayDate);
+          
+          // Debug: vérifier s'il y a des pointages pour aujourd'hui
+          if (employesPresents === 0) {
+            const debugResult = await sequelize.query(
+              `SELECT COUNT(*) as total, 
+                      SUM(CASE WHEN present = 1 THEN 1 ELSE 0 END) as presents,
+                      SUM(CASE WHEN present = 0 THEN 1 ELSE 0 END) as absents
+               FROM tbl_pointages 
+               WHERE date_pointage = :todayDate`,
+              {
+                replacements: { todayDate: todayDate },
+                type: sequelize.QueryTypes.SELECT
+              }
+            );
+            console.log('📊 Debug pointages aujourd\'hui:', debugResult[0]);
+          }
         } catch (error) {
-          console.log('⚠️  Erreur Pointage:', error.message);
+          console.error('⚠️  Erreur Pointage:', error.message);
+          console.error('⚠️  Stack:', error.stack);
         }
 
         // Articles en rupture de stock
