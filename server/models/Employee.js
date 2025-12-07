@@ -50,6 +50,9 @@ class Employee {
     this.temps_travail = data.temps_travail;
     this.statut = data.statut || 'Actif';
     this.niveau_classification = data.niveau_classification;
+    this.salaire_journalier = data.salaire_journalier;
+    this.transport = data.transport;
+    this.indemnites_diverse = data.indemnites_diverse;
     this.photo_url = data.photo_url;
     
     // Métadonnées
@@ -66,8 +69,8 @@ class Employee {
         telephone_personnel, telephone_domicile, email_personnel, contact_urgence_nom,
         contact_urgence_prenom, contact_urgence_lien, contact_urgence_telephone, matricule,
         poste, departement_id, sous_departement_id, date_embauche, type_contrat, date_fin_contrat, temps_travail,
-        statut, niveau_classification, photo_url, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        statut, niveau_classification, salaire_journalier, transport, indemnites_diverse, photo_url, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const values = [
@@ -101,7 +104,10 @@ class Employee {
       employeeData.date_fin_contrat || null, 
       employeeData.temps_travail || null, 
       employeeData.statut || 'Actif',
-      employeeData.niveau_classification || null, 
+      employeeData.niveau_classification || null,
+      employeeData.salaire_journalier || 0.00,
+      employeeData.transport || 0.00,
+      employeeData.indemnites_diverse || 0.00,
       employeeData.photo_url || null, 
       employeeData.created_by || null
     ];
@@ -197,6 +203,7 @@ class Employee {
         contact_urgence_prenom = ?, contact_urgence_lien = ?, contact_urgence_telephone = ?,
         matricule = ?, poste = ?, departement_id = ?, sous_departement_id = ?, date_embauche = ?, type_contrat = ?,
         date_fin_contrat = ?, temps_travail = ?, statut = ?, niveau_classification = ?,
+        salaire_journalier = ?, transport = ?, indemnites_diverse = ?,
         photo_url = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `;
@@ -211,7 +218,9 @@ class Employee {
       employeeData.contact_urgence_telephone, employeeData.matricule, employeeData.poste,
       employeeData.departement_id, employeeData.sous_departement_id, employeeData.date_embauche, employeeData.type_contrat,
       employeeData.date_fin_contrat, employeeData.temps_travail, employeeData.statut,
-      employeeData.niveau_classification, employeeData.photo_url, employeeData.updated_by, id
+      employeeData.niveau_classification, employeeData.salaire_journalier || 0.00,
+      employeeData.transport || 0.00, employeeData.indemnites_diverse || 0.00,
+      employeeData.photo_url, employeeData.updated_by, id
     ];
 
     try {
@@ -277,6 +286,9 @@ class Employee {
       temps_travail: 'temps_travail',
       statut: 'statut',
       niveau_classification: 'niveau_classification',
+      salaire_journalier: 'salaire_journalier',
+      transport: 'transport',
+      indemnites_diverse: 'indemnites_diverse',
       photo_url: 'photo_url',
       updated_by: 'updated_by'
     };

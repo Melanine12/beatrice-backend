@@ -167,6 +167,24 @@ const Employe = sequelize.define('Employe', {
     allowNull: true,
     comment: 'Niveau de classification'
   },
+  salaire_journalier: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    defaultValue: 0.00,
+    comment: 'Salaire journalier de l\'employé'
+  },
+  transport: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    defaultValue: 0.00,
+    comment: 'Indemnité de transport'
+  },
+  indemnites_diverse: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    defaultValue: 0.00,
+    comment: 'Indemnités diverses'
+  },
   photo_url: {
     type: DataTypes.STRING(500),
     allowNull: true,
