@@ -31,7 +31,8 @@ router.get('/stats', async (req, res) => {
       expenseStats,
       userStats,
       assignmentStats,
-      auditorStats
+      auditorStats,
+      supervisorRHStats
     ] = await Promise.all([
       // Room statistics
       (async () => {
@@ -397,6 +398,46 @@ router.get('/stats', async (req, res) => {
         
         console.log('📊 Auditor stats computed:', auditorStats);
         return auditorStats;
+      })(),
+
+      // Supervisor RH statistics (for users with role "Superviseur RH")
+      (async () => {
+        console.log('🔍 Computing Supervisor RH statistics...');
+        
+        // Employés présents du jour
+        let employesPresentsAujourdhui = 0;
+        try {
+          // La table pointages stocke seulement la date (sans heure)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const todayDate = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
+          
+          // Utiliser une requête SQL brute pour compter les employés distincts qui sont présents aujourd'hui
+          const result = await sequelize.query(
+            `SELECT COUNT(DISTINCT employe_id) as count 
+             FROM tbl_pointages 
+             WHERE date_pointage = :todayDate 
+             AND present = 1`,
+            {
+              replacements: { todayDate: todayDate },
+              type: sequelize.QueryTypes.SELECT
+            }
+          );
+          
+          employesPresentsAujourdhui = result[0]?.count || 0;
+          
+          console.log('📊 Employés présents aujourd\'hui (Superviseur RH):', employesPresentsAujourdhui, 'pour la date:', todayDate);
+        } catch (error) {
+          console.error('⚠️  Erreur Pointage (Superviseur RH):', error.message);
+          console.error('⚠️  Stack:', error.stack);
+        }
+
+        const supervisorRHStats = {
+          employesPresentsAujourdhui
+        };
+        
+        console.log('📊 Supervisor RH stats computed:', supervisorRHStats);
+        return supervisorRHStats;
       })()
     ]);
 
@@ -438,12 +479,14 @@ router.get('/stats', async (req, res) => {
         assignments: assignmentStats
       },
       auditorStats,
+      supervisorRHStats,
       systemHealth,
       overallScore: overallScore.toFixed(2),
       lastUpdated: new Date().toISOString()
     };
     
     console.log('🚀 Dashboard response includes auditorStats:', !!response.auditorStats);
+    console.log('🚀 Dashboard response includes supervisorRHStats:', !!response.supervisorRHStats);
     res.json(response);
 
   } catch (error) {
