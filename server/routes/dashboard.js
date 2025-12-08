@@ -460,6 +460,8 @@ router.get('/stats', async (req, res) => {
     
     console.log('🚀 Dashboard response includes auditorStats:', !!response.auditorStats);
     console.log('🚀 Dashboard response includes supervisorRHStats:', !!response.supervisorRHStats);
+    console.log('🚀 SupervisorRHStats value:', JSON.stringify(response.supervisorRHStats));
+    console.log('🚀 EmployesPresentsAujourdhui:', response.supervisorRHStats?.employesPresentsAujourdhui);
     res.json(response);
 
   } catch (error) {
