@@ -236,9 +236,27 @@ router.put('/:id', [
   requireRole(['Superviseur', 'Superviseur Stock']),
   body('nom').optional().isLength({ min: 2, max: 255 }),
   body('categorie').optional().isIn(['Mobilier', 'Équipement', 'Linge', 'Produits', 'Électronique', 'Décoration', 'Autre']),
-  body('quantite').optional().isFloat({ min: 0 }),
-  body('quantite_min').optional().isFloat({ min: 0 }),
-  body('prix_unitaire').optional().isFloat({ min: 0 }),
+  body('quantite').optional().isFloat({ min: 0 }).custom((value) => {
+    if (value !== null && value !== undefined && (isNaN(value) || value < 0)) {
+      throw new Error('La quantité doit être un nombre positif');
+    }
+    return true;
+  }),
+  body('quantite_min').optional().isFloat({ min: 0 }).custom((value) => {
+    if (value !== null && value !== undefined && (isNaN(value) || value < 0)) {
+      throw new Error('La quantité minimale doit être un nombre positif');
+    }
+    return true;
+  }),
+  body('prix_unitaire').optional().custom((value) => {
+    if (value !== null && value !== undefined && value !== '') {
+      const numValue = parseFloat(value);
+      if (isNaN(numValue) || numValue < 0) {
+        throw new Error('Le prix unitaire doit être un nombre positif');
+      }
+    }
+    return true;
+  }),
   body('statut').optional().isIn(['Disponible', 'En rupture', 'En commande', 'Hors service']),
   body('code_produit').optional().isLength({ max: 100 }),
   body('nature').optional().isIn(['Consommable', 'Durable', 'Équipement', 'Mobilier', 'Linge', 'Produit d\'entretien', 'Autre']),
@@ -277,20 +295,29 @@ router.put('/:id', [
     
     const filteredData = {};
     allowedFields.forEach(field => {
-      if (req.body[field] !== undefined && req.body[field] !== '') {
-        // Convertir etage en entier si présent
-        if (field === 'etage') {
-          filteredData[field] = parseInt(req.body[field]) || null;
-        } else {
+      // Pour les champs numériques, accepter même 0 et null
+      const numericFields = ['quantite', 'quantite_min', 'prix_unitaire', 'emplacement_id', 'etage', 'responsable_id', 'chambre_id'];
+      
+      if (numericFields.includes(field)) {
+        // Pour les champs numériques, inclure même si 0 ou null
+        if (req.body[field] !== undefined) {
+          if (field === 'etage') {
+            filteredData[field] = req.body[field] !== '' && req.body[field] !== null ? parseInt(req.body[field]) || null : null;
+          } else if (field === 'emplacement_id' || field === 'responsable_id' || field === 'chambre_id') {
+            filteredData[field] = req.body[field] !== '' && req.body[field] !== null ? parseInt(req.body[field]) || null : null;
+          } else {
+            // Pour quantite, quantite_min, prix_unitaire - accepter les nombres même si 0
+            const numValue = typeof req.body[field] === 'number' ? req.body[field] : parseFloat(req.body[field]);
+            filteredData[field] = isNaN(numValue) ? (field === 'prix_unitaire' ? null : 0) : numValue;
+          }
+        }
+      } else {
+        // Pour les autres champs, ignorer les valeurs vides
+        if (req.body[field] !== undefined && req.body[field] !== '') {
           filteredData[field] = req.body[field];
         }
       }
     });
-    
-    // Toujours inclure etage (même si null) pour éviter l'erreur de valeur par défaut lors de la mise à jour
-    if (req.body.etage !== undefined) {
-      filteredData.etage = req.body.etage !== '' ? parseInt(req.body.etage) || null : null;
-    }
 
     await inventaire.update(filteredData);
 
