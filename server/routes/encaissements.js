@@ -12,6 +12,20 @@ router.use(authenticateToken);
 router.get('/', async (req, res) => {
   try {
     console.log('🔍 Récupération des encaissements...');
+    console.log('👤 Utilisateur:', req.user?.id, 'Rôle:', req.user?.role);
+    
+    // Filtrer par utilisateur si c'est un Guichetier
+    // Superviseur Finance voit tous les encaissements
+    let whereClause = '';
+    const replacements = {};
+    
+    if (req.user?.role === 'Guichetier') {
+      whereClause = `WHERE e.user_guichet_id = :userId`;
+      replacements.userId = req.user.id;
+      console.log('🔒 Filtrage par guichetier_id:', req.user.id);
+    } else {
+      console.log('🔓 Accès complet - tous les encaissements');
+    }
     
     const encaissements = await sequelize.query(`
       SELECT 
@@ -21,8 +35,10 @@ router.get('/', async (req, res) => {
         u.nom as guichetier_nom, u.prenom as guichetier_prenom
       FROM tbl_encaissements e
       LEFT JOIN tbl_utilisateurs u ON e.user_guichet_id = u.id
+      ${whereClause}
       ORDER BY e.date_paiement DESC
     `, {
+      replacements,
       type: sequelize.QueryTypes.SELECT
     });
 
