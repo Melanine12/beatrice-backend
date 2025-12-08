@@ -267,8 +267,18 @@ router.put('/:id', [
   body('qr_code_article').optional().isLength({ max: 255 })
 ], async (req, res) => {
   try {
+    // Filtrer les champs undefined avant la validation
+    Object.keys(req.body).forEach(key => {
+      if (req.body[key] === undefined) {
+        delete req.body[key];
+      }
+    });
+    
+    console.log('📥 Données reçues pour PUT /inventaire:', req.body);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.error('❌ Erreurs de validation:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Données invalides',
