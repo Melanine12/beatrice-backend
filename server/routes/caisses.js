@@ -214,8 +214,8 @@ router.post('/', [
     .withMessage('Le solde initial doit être un nombre positif'),
   body('devise')
     .optional()
-    .isLength({ min: 3, max: 3 })
-    .withMessage('La devise doit contenir exactement 3 caractères'),
+    .isLength({ min: 2, max: 3 })
+    .withMessage('La devise doit contenir entre 2 et 3 caractères'),
   body('statut')
     .optional()
     .isIn(['Active', 'Inactive', 'En maintenance', 'Fermée'])
@@ -334,8 +334,8 @@ router.put('/:id', [
     .withMessage('L\'emplacement ne doit pas dépasser 100 caractères'),
   body('devise')
     .optional()
-    .isLength({ min: 3, max: 3 })
-    .withMessage('La devise doit contenir exactement 3 caractères'),
+    .isLength({ min: 2, max: 3 })
+    .withMessage('La devise doit contenir entre 2 et 3 caractères'),
   body('statut')
     .optional()
     .isIn(['Active', 'Inactive', 'En maintenance', 'Fermée'])
