@@ -407,26 +407,55 @@ router.get('/stats', async (req, res) => {
         // Employés présents du jour
         let employesPresentsAujourdhui = 0;
         try {
+          const { Op } = require('sequelize');
+          
           // La table pointages stocke seulement la date (sans heure)
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           const todayDate = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
           
-          // Utiliser une requête SQL brute pour compter les employés distincts qui sont présents aujourd'hui
-          const result = await sequelize.query(
-            `SELECT COUNT(DISTINCT employe_id) as count 
-             FROM tbl_pointages 
-             WHERE date_pointage = :todayDate 
-             AND present = 1`,
-            {
-              replacements: { todayDate: todayDate },
-              type: sequelize.QueryTypes.SELECT
-            }
-          );
+          console.log('📅 Date recherchée (Superviseur RH):', todayDate);
           
-          employesPresentsAujourdhui = result[0]?.count || 0;
+          // Utiliser Sequelize pour compter les employés distincts qui sont présents aujourd'hui
+          const pointagesAujourdhui = await Pointage.findAll({
+            where: {
+              date_pointage: todayDate,
+              present: true
+            },
+            attributes: ['employe_id'],
+            raw: true
+          });
+          
+          // Compter les employés distincts
+          const employesDistincts = new Set(pointagesAujourdhui.map(p => p.employe_id));
+          employesPresentsAujourdhui = employesDistincts.size;
           
           console.log('📊 Employés présents aujourd\'hui (Superviseur RH):', employesPresentsAujourdhui, 'pour la date:', todayDate);
+          console.log('📊 Pointages trouvés:', pointagesAujourdhui.length, 'pour', employesDistincts.size, 'employés distincts');
+          
+          // Debug: vérifier s'il y a des pointages pour aujourd'hui
+          if (employesPresentsAujourdhui === 0) {
+            // Vérifier tous les pointages d'aujourd'hui (présents et absents)
+            const tousPointagesAujourdhui = await Pointage.findAll({
+              where: {
+                date_pointage: todayDate
+              },
+              attributes: ['employe_id', 'present', 'date_pointage'],
+              raw: true
+            });
+            
+            console.log('📊 Tous les pointages aujourd\'hui (Superviseur RH):', tousPointagesAujourdhui);
+            console.log('📊 Nombre total de pointages:', tousPointagesAujourdhui.length);
+            
+            // Vérifier aussi les pointages récents pour voir le format
+            const recentPointages = await Pointage.findAll({
+              limit: 5,
+              order: [['date_pointage', 'DESC']],
+              attributes: ['employe_id', 'date_pointage', 'present'],
+              raw: true
+            });
+            console.log('📊 Derniers pointages (Superviseur RH):', recentPointages);
+          }
         } catch (error) {
           console.error('⚠️  Erreur Pointage (Superviseur RH):', error.message);
           console.error('⚠️  Stack:', error.stack);
