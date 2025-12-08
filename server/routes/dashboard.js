@@ -326,6 +326,45 @@ router.get('/stats', async (req, res) => {
           
           employesPresents = parseInt(result[0]?.count) || 0;
           
+          // Si aucun pointage aujourd'hui, utiliser la date la plus récente avec des présences
+          // (utile si les pointages sont enregistrés avec un décalage de date)
+          if (employesPresents === 0) {
+            const mostRecentResult = await sequelize.query(
+              `SELECT DATE(date_pointage) as date_pointage, COUNT(DISTINCT employe_id) as count
+               FROM tbl_pointages 
+               WHERE present = 1
+               GROUP BY DATE(date_pointage)
+               ORDER BY date_pointage DESC
+               LIMIT 1`,
+              {
+                type: sequelize.QueryTypes.SELECT
+              }
+            );
+            
+            if (mostRecentResult.length > 0) {
+              const mostRecentDate = mostRecentResult[0].date_pointage;
+              const mostRecentCount = parseInt(mostRecentResult[0].count) || 0;
+              
+              // Vérifier si la date la plus récente est aujourd'hui ou hier (dans les dernières 24h)
+              const dateCheck = await sequelize.query(
+                `SELECT CURDATE() as today, DATE(:mostRecentDate) as most_recent, 
+                        DATEDIFF(CURDATE(), DATE(:mostRecentDate)) as days_diff`,
+                {
+                  replacements: { mostRecentDate: mostRecentDate },
+                  type: sequelize.QueryTypes.SELECT
+                }
+              );
+              
+              const daysDiff = parseInt(dateCheck[0]?.days_diff) || 999;
+              
+              // Si la date la plus récente est aujourd'hui ou hier (0 ou 1 jour de différence), l'utiliser
+              if (daysDiff <= 1) {
+                employesPresents = mostRecentCount;
+                console.log(`📊 Utilisation de la date la plus récente (${mostRecentDate}, ${daysDiff} jour(s) de différence): ${employesPresents} employés`);
+              }
+            }
+          }
+          
           console.log('📊 Employés présents aujourd\'hui (Auditeur):', employesPresents);
         } catch (error) {
           console.error('⚠️  Erreur Pointage:', error.message);
@@ -398,6 +437,45 @@ router.get('/stats', async (req, res) => {
           );
           
           employesPresentsAujourdhui = parseInt(result[0]?.count) || 0;
+          
+          // Si aucun pointage aujourd'hui, utiliser la date la plus récente avec des présences
+          // (utile si les pointages sont enregistrés avec un décalage de date)
+          if (employesPresentsAujourdhui === 0) {
+            const mostRecentResult = await sequelize.query(
+              `SELECT DATE(date_pointage) as date_pointage, COUNT(DISTINCT employe_id) as count
+               FROM tbl_pointages 
+               WHERE present = 1
+               GROUP BY DATE(date_pointage)
+               ORDER BY date_pointage DESC
+               LIMIT 1`,
+              {
+                type: sequelize.QueryTypes.SELECT
+              }
+            );
+            
+            if (mostRecentResult.length > 0) {
+              const mostRecentDate = mostRecentResult[0].date_pointage;
+              const mostRecentCount = parseInt(mostRecentResult[0].count) || 0;
+              
+              // Vérifier si la date la plus récente est aujourd'hui ou hier (dans les dernières 24h)
+              const dateCheck = await sequelize.query(
+                `SELECT CURDATE() as today, DATE(:mostRecentDate) as most_recent, 
+                        DATEDIFF(CURDATE(), DATE(:mostRecentDate)) as days_diff`,
+                {
+                  replacements: { mostRecentDate: mostRecentDate },
+                  type: sequelize.QueryTypes.SELECT
+                }
+              );
+              
+              const daysDiff = parseInt(dateCheck[0]?.days_diff) || 999;
+              
+              // Si la date la plus récente est aujourd'hui ou hier (0 ou 1 jour de différence), l'utiliser
+              if (daysDiff <= 1) {
+                employesPresentsAujourdhui = mostRecentCount;
+                console.log(`📊 Utilisation de la date la plus récente (${mostRecentDate}, ${daysDiff} jour(s) de différence): ${employesPresentsAujourdhui} employés`);
+              }
+            }
+          }
           
           console.log('📊 Employés présents aujourd\'hui (Superviseur RH):', employesPresentsAujourdhui);
         } catch (error) {
