@@ -17,9 +17,10 @@ router.use(authenticateToken);
 // GET /api/caisses/all - Récupérer toutes les caisses pour les selects (sans pagination)
 router.get('/all', async (req, res) => {
   try {
+    // Récupérer toutes les caisses (sans filtre de statut pour les selects)
+    // L'utilisateur peut choisir parmi toutes les caisses disponibles
     const caisses = await Caisse.findAll({
-      where: { statut: 'Active' }, // Seulement les caisses actives
-      attributes: ['id', 'nom', 'code_caisse', 'devise', 'solde_initial', 'solde_actuel'],
+      attributes: ['id', 'nom', 'code_caisse', 'devise', 'solde_initial', 'solde_actuel', 'statut'],
       order: [['nom', 'ASC']]
     });
 
