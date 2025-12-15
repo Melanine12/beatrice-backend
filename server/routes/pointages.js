@@ -59,7 +59,7 @@ router.get('/', [
         {
           model: Employe,
           as: 'Employe',
-          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel', 'poste']
+          attributes: ['id', 'nom_famille', 'prenoms', 'email_personnel', 'poste', 'salaire_journalier']
         },
         {
           model: User,
