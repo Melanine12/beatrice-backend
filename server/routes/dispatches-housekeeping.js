@@ -21,7 +21,7 @@ router.get('/', [
   query('date_debut').optional().isISO8601().toDate(),
   query('date_fin').optional().isISO8601().toDate(),
   query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 })
+  query('limit').optional().isInt({ min: 1, max: 1000 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -36,7 +36,9 @@ router.get('/', [
     }
 
     const { agent_id, statut, date_debut, date_fin, page = 1, limit = 50 } = req.query;
-    const offset = (page - 1) * limit;
+    const parsedLimit = parseInt(limit) || 50;
+    const parsedPage = parseInt(page) || 1;
+    const offset = (parsedPage - 1) * parsedLimit;
 
     const where = {};
     if (agent_id) where.agent_id = parseInt(agent_id);
@@ -82,7 +84,7 @@ router.get('/', [
       where,
       include,
       order: [['created_at', 'DESC']],
-      limit: parseInt(limit),
+      limit: parsedLimit,
       offset
     });
 
@@ -91,10 +93,10 @@ router.get('/', [
       dispatches: rows,
       data: rows, // Pour compatibilité avec le frontend
       pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(count / limit),
+        currentPage: parsedPage,
+        totalPages: Math.ceil(count / parsedLimit),
         totalItems: count,
-        itemsPerPage: parseInt(limit)
+        itemsPerPage: parsedLimit
       }
     });
   } catch (error) {
