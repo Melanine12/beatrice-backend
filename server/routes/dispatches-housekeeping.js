@@ -26,7 +26,13 @@ router.get('/', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
+      console.error('Validation errors:', errors.array());
+      console.error('Request body:', req.body);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Erreur de validation',
+        errors: errors.array() 
+      });
     }
 
     const { agent_id, statut, date_debut, date_fin, page = 1, limit = 50 } = req.query;
@@ -148,10 +154,13 @@ router.get('/:id', async (req, res) => {
 // POST /api/dispatches-housekeeping - Create a new dispatch
 router.post('/', [
   body('agent_id').isInt({ min: 1 }).withMessage('Agent ID est requis'),
-  body('chambre_id').optional().isInt({ min: 1 }),
+  body('chambre_id').optional({ nullable: true, checkFalsy: true }).custom((value) => {
+    if (value === null || value === undefined || value === '') return true;
+    return Number.isInteger(parseInt(value)) && parseInt(value) > 0;
+  }).withMessage('Chambre ID invalide'),
   body('statut').optional().isIn(['en_attente', 'en_cours', 'complete', 'annule']),
-  body('date_prevue').isISO8601().toDate().withMessage('Date prévue est requise'),
-  body('notes').optional().isString(),
+  body('date_prevue').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date prévue doit être au format YYYY-MM-DD'),
+  body('notes').optional({ nullable: true }).isString(),
   body('articles').isArray({ min: 1 }).withMessage('Au moins un article est requis'),
   body('articles.*.id').isInt({ min: 1 }).withMessage('ID article invalide'),
   body('articles.*.quantite').isInt({ min: 1 }).withMessage('Quantité doit être au moins 1')
@@ -159,10 +168,19 @@ router.post('/', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
+      console.error('Validation errors:', errors.array());
+      console.error('Request body:', req.body);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Erreur de validation',
+        errors: errors.array() 
+      });
     }
 
     const { agent_id, chambre_id, statut = 'en_attente', date_prevue, notes, articles } = req.body;
+    
+    // Convertir date_prevue en format DATE si c'est une chaîne YYYY-MM-DD
+    const datePrevueValue = date_prevue ? (typeof date_prevue === 'string' ? date_prevue : date_prevue.toISOString().split('T')[0]) : null;
 
     // Vérifier que l'agent existe
     const agent = await User.findByPk(agent_id);
@@ -194,7 +212,7 @@ router.post('/', [
         agent_id,
         chambre_id: chambre_id || null,
         statut,
-        date_prevue,
+        date_prevue: datePrevueValue,
         notes: notes || null,
         created_by: req.user.id
       }, { transaction: t });
@@ -255,14 +273,20 @@ router.put('/:id', [
   body('agent_id').optional().isInt({ min: 1 }),
   body('chambre_id').optional().isInt({ min: 1 }),
   body('statut').optional().isIn(['en_attente', 'en_cours', 'complete', 'annule']),
-  body('date_prevue').optional().isISO8601().toDate(),
+  body('date_prevue').optional().isISO8601(),
   body('notes').optional().isString(),
   body('articles').optional().isArray()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
+      console.error('Validation errors:', errors.array());
+      console.error('Request body:', req.body);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Erreur de validation',
+        errors: errors.array() 
+      });
     }
 
     const { id } = req.params;
@@ -296,7 +320,10 @@ router.put('/:id', [
       if (agent_id) updateData.agent_id = agent_id;
       if (chambre_id !== undefined) updateData.chambre_id = chambre_id || null;
       if (statut) updateData.statut = statut;
-      if (date_prevue) updateData.date_prevue = date_prevue;
+      if (date_prevue) {
+        // Convertir date_prevue en format DATE si c'est une chaîne YYYY-MM-DD
+        updateData.date_prevue = typeof date_prevue === 'string' ? date_prevue : date_prevue.toISOString().split('T')[0];
+      }
       if (notes !== undefined) updateData.notes = notes || null;
 
       await dispatch.update(updateData, { transaction: t });
