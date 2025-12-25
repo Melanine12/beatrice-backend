@@ -16,6 +16,8 @@ const AffectationChambre = require('./AffectationChambre');
 const Demande = require('./Demande');
 const DemandeAffectation = require('./DemandeAffectation');
 const DemandeAffectationLigne = require('./DemandeAffectationLigne');
+const DispatchHousekeeping = require('./DispatchHousekeeping');
+const DispatchHousekeepingArticle = require('./DispatchHousekeepingArticle');
 const Departement = require('./Departement');
 const SousDepartement = require('./SousDepartement');
 const Notification = require('./Notification');
@@ -199,6 +201,22 @@ DemandeAffectationLigne.belongsTo(Inventaire, { foreignKey: 'inventaire_id', as:
 
 Chambre.hasMany(DemandeAffectationLigne, { foreignKey: 'chambre_id', as: 'DemandesAffectationLignes' });
 DemandeAffectationLigne.belongsTo(Chambre, { foreignKey: 'chambre_id', as: 'chambre' });
+
+// Associations pour les dispatches housekeeping
+User.hasMany(DispatchHousekeeping, { foreignKey: 'agent_id', as: 'DispatchesAsAgent' });
+DispatchHousekeeping.belongsTo(User, { foreignKey: 'agent_id', as: 'agent' });
+
+User.hasMany(DispatchHousekeeping, { foreignKey: 'created_by', as: 'DispatchesCreated' });
+DispatchHousekeeping.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+
+Chambre.hasMany(DispatchHousekeeping, { foreignKey: 'chambre_id', as: 'Dispatches' });
+DispatchHousekeeping.belongsTo(Chambre, { foreignKey: 'chambre_id', as: 'chambre' });
+
+DispatchHousekeeping.hasMany(DispatchHousekeepingArticle, { foreignKey: 'dispatch_id', as: 'articles' });
+DispatchHousekeepingArticle.belongsTo(DispatchHousekeeping, { foreignKey: 'dispatch_id', as: 'dispatch' });
+
+Inventaire.hasMany(DispatchHousekeepingArticle, { foreignKey: 'inventaire_id', as: 'DispatchArticles' });
+DispatchHousekeepingArticle.belongsTo(Inventaire, { foreignKey: 'inventaire_id', as: 'inventaire' });
 
 // Associations pour les demandes de fonds
 DemandeFonds.hasMany(LigneDemandeFonds, { 
