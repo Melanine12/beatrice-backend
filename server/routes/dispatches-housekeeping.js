@@ -462,4 +462,70 @@ router.post('/check-ruptures', async (req, res) => {
   }
 });
 
+// GET /api/dispatches-housekeeping/monitoring/status - Obtenir le statut du monitoring
+router.get('/monitoring/status', async (req, res) => {
+  try {
+    const stockMonitoringService = require('../services/stockMonitoringService');
+    const status = stockMonitoringService.getStatus();
+    res.json({ success: true, ...status });
+  } catch (error) {
+    console.error('Error getting monitoring status:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors de la récupération du statut',
+      error: error.message 
+    });
+  }
+});
+
+// POST /api/dispatches-housekeeping/monitoring/start - Démarrer le monitoring
+router.post('/monitoring/start', [
+  body('interval').optional().isInt({ min: 10000, max: 3600000 }).withMessage('Intervalle doit être entre 10000ms et 3600000ms')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const stockMonitoringService = require('../services/stockMonitoringService');
+    const interval = req.body.interval ? parseInt(req.body.interval) : 60000;
+    stockMonitoringService.startMonitoring(interval);
+    
+    res.json({ 
+      success: true, 
+      message: `Monitoring démarré avec un intervalle de ${interval / 1000}s`,
+      status: stockMonitoringService.getStatus()
+    });
+  } catch (error) {
+    console.error('Error starting monitoring:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors du démarrage du monitoring',
+      error: error.message 
+    });
+  }
+});
+
+// POST /api/dispatches-housekeeping/monitoring/stop - Arrêter le monitoring
+router.post('/monitoring/stop', async (req, res) => {
+  try {
+    const stockMonitoringService = require('../services/stockMonitoringService');
+    stockMonitoringService.stopMonitoring();
+    
+    res.json({ 
+      success: true, 
+      message: 'Monitoring arrêté',
+      status: stockMonitoringService.getStatus()
+    });
+  } catch (error) {
+    console.error('Error stopping monitoring:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors de l\'arrêt du monitoring',
+      error: error.message 
+    });
+  }
+});
+
 module.exports = router;

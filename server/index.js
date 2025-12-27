@@ -475,6 +475,12 @@ async function startServer() {
     
     console.log('✅ Database connection ready with connection pooling.');
     
+    // Démarrer le service de monitoring des stocks
+    const stockMonitoringService = require('./services/stockMonitoringService');
+    const monitoringInterval = parseInt(process.env.STOCK_MONITORING_INTERVAL || '60000', 10); // 1 minute par défaut
+    stockMonitoringService.startMonitoring(monitoringInterval);
+    console.log(`📊 Service de monitoring des stocks démarré (intervalle: ${monitoringInterval / 1000}s)`);
+    
     const server = http.listen(PORT, () => {
       console.log(`🚀 Hôtel Beatrice Management System running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
