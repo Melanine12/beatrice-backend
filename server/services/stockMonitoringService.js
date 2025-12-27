@@ -169,9 +169,9 @@ class StockMonitoringService {
       }
 
       const articleIds = articlesEnRupture.map(a => a.id);
+      // Vérifier TOUTES les demandes en attente, pas seulement celles du demandeur
       const existingDemandes = await DemandeAffectation.findAll({
         where: {
-          demandeur_id: superviseurHousing.id,
           statut: 'en_attente'
         },
         include: [
@@ -181,7 +181,8 @@ class StockMonitoringService {
             where: {
               inventaire_id: { [Op.in]: articleIds },
               chambre_id: stockHousekeepingChambre.id
-            }
+            },
+            required: true // INNER JOIN pour ne prendre que les demandes qui ont des lignes correspondantes
           }
         ]
       });
@@ -220,32 +221,86 @@ class StockMonitoringService {
    * Génère une demande d'affectation pour les articles en rupture
    */
   async generateDemandeForArticles(articles, stockHousekeepingChambre, superviseurHousing) {
+    const { sequelize } = require('../config/database');
+    
     try {
       console.log(`📝 Création d'une demande pour ${articles.length} article(s)...`);
 
-      const demande = await DemandeAffectation.create({
-        demandeur_id: superviseurHousing.id,
-        statut: 'en_attente',
-        commentaire: `Demande automatique générée suite à une rupture de stock dans Stock House Keeping (quantité restante <= stock minimum)`
+      // Utiliser une transaction pour éviter les doublons en cas d'appels simultanés
+      const demande = await sequelize.transaction(async (t) => {
+        // Vérifier à nouveau les doublons dans la transaction (protection contre les appels simultanés)
+        const articleIds = articles.map(a => a.id);
+        const existingDemandesInTx = await DemandeAffectation.findAll({
+          where: {
+            statut: 'en_attente'
+          },
+          include: [
+            {
+              model: DemandeAffectationLigne,
+              as: 'lignes',
+              where: {
+                inventaire_id: { [Op.in]: articleIds },
+                chambre_id: stockHousekeepingChambre.id
+              },
+              required: true
+            }
+          ],
+          transaction: t
+        });
+
+        // Filtrer les articles qui ont déjà une demande en attente
+        const articleIdsWithPendingDemande = new Set();
+        existingDemandesInTx.forEach(demande => {
+          demande.lignes.forEach(ligne => {
+            if (ligne.inventaire_id && articleIds.includes(ligne.inventaire_id)) {
+              articleIdsWithPendingDemande.add(ligne.inventaire_id);
+            }
+          });
+        });
+
+        const articlesToProcess = articles.filter(a => !articleIdsWithPendingDemande.has(a.id));
+
+        if (articlesToProcess.length === 0) {
+          console.log('ℹ️  Toutes les ruptures ont déjà une demande en attente (vérification dans transaction)');
+          return null; // Pas de demande à créer
+        }
+
+        // Créer la demande
+        const newDemande = await DemandeAffectation.create({
+          demandeur_id: superviseurHousing.id,
+          statut: 'en_attente',
+          commentaire: `Demande automatique générée suite à une rupture de stock dans Stock House Keeping (quantité restante <= stock minimum)`
+        }, { transaction: t });
+
+        const lignes = articlesToProcess.map(article => {
+          const stockMinimum = parseFloat(article.stock_minimum || article.quantite_min || 0);
+          // Quantité demandée = double du stock minimum
+          const quantiteDemandee = Math.max(1, Math.ceil(stockMinimum * 2));
+
+          console.log(`   - ${article.nom}: quantité restante = ${article.stock_restant}, stock min = ${stockMinimum}, quantité demandée = ${quantiteDemandee}`);
+
+          return {
+            demande_affectation_id: newDemande.id,
+            inventaire_id: article.id,
+            chambre_id: stockHousekeepingChambre.id,
+            quantite_demandee: quantiteDemandee,
+            quantite_approvee: 0
+          };
+        });
+
+        await DemandeAffectationLigne.bulkCreate(lignes, { transaction: t });
+
+        return newDemande;
       });
 
-      const lignes = articles.map(article => {
-        const stockMinimum = parseFloat(article.stock_minimum || article.quantite_min || 0);
-        // Quantité demandée = double du stock minimum
-        const quantiteDemandee = Math.max(1, Math.ceil(stockMinimum * 2));
-
-        console.log(`   - ${article.nom}: quantité restante = ${article.stock_restant}, stock min = ${stockMinimum}, quantité demandée = ${quantiteDemandee}`);
-
+      if (!demande) {
         return {
-          demande_affectation_id: demande.id,
-          inventaire_id: article.id,
-          chambre_id: stockHousekeepingChambre.id,
-          quantite_demandee: quantiteDemandee,
-          quantite_approvee: 0
+          success: true,
+          message: 'Aucune demande créée - toutes les ruptures ont déjà une demande en attente',
+          demande_id: null,
+          articles_count: 0
         };
-      });
-
-      await DemandeAffectationLigne.bulkCreate(lignes);
+      }
 
       console.log(`✅ Demande d'affectation #${demande.id} créée automatiquement pour ${articles.length} article(s)`);
 
@@ -306,9 +361,9 @@ class StockMonitoringService {
           return;
         }
 
+        // Vérifier TOUTES les demandes en attente pour cet article, pas seulement celles du demandeur
         const existingDemande = await DemandeAffectation.findOne({
           where: {
-            demandeur_id: superviseurHousing.id,
             statut: 'en_attente'
           },
           include: [
@@ -318,7 +373,8 @@ class StockMonitoringService {
               where: {
                 inventaire_id: articleId,
                 chambre_id: chambreId
-              }
+              },
+              required: true // INNER JOIN pour ne prendre que les demandes qui ont des lignes correspondantes
             }
           ]
         });
