@@ -38,10 +38,10 @@ router.get('/', [
     if (statut) where.statut = statut;
 
     // Déterminer les permissions de l'utilisateur
-    const canViewAll = req.user.role === 'Superviseur Stock' || req.user.role === 'Auditeur';
+    const canViewAll = req.user.role === 'Superviseur Stock' || req.user.role === 'Auditeur' || req.user.role === 'Superviseur Housing';
     
     if (canViewAll) {
-      // Superviseur Stock et Auditeur voient toutes les demandes
+      // Superviseur Stock, Auditeur et Superviseur Housing voient toutes les demandes
       // Si user_id est fourni, filtrer par cet utilisateur
       if (user_id) {
         where.demandeur_id = parseInt(user_id, 10);
@@ -182,7 +182,7 @@ router.get('/:id', async (req, res) => {
     if (!demande) return res.status(404).json({ success: false, message: 'Demande non trouvée' });
     
     // Vérifier les permissions d'accès
-    const canViewAll = req.user.role === 'Superviseur Stock' || req.user.role === 'Auditeur';
+    const canViewAll = req.user.role === 'Superviseur Stock' || req.user.role === 'Auditeur' || req.user.role === 'Superviseur Housing';
     if (!canViewAll && demande.demandeur_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Accès refusé' });
     }
