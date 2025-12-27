@@ -71,7 +71,7 @@ class StockMonitoringService {
             { numero: 'Stock House Keeping' },
             { numero: 'Stock House keeping' },
             { numero: { [Op.like]: '%Stock House Keeping%' } }
-          },
+          ],
           type: 'Entrepôt'
         }
       });
@@ -272,7 +272,7 @@ class StockMonitoringService {
             { numero: 'Stock House Keeping' },
             { numero: 'Stock House keeping' },
             { numero: { [Op.like]: '%Stock House Keeping%' } }
-          },
+          ],
           type: 'Entrepôt'
         }
       });
