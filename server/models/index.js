@@ -40,6 +40,7 @@ const OffreEmploi = require('./OffreEmploi');
 const CandidatureOffre = require('./CandidatureOffre');
 const Dependant = require('./Dependant');
 const Sanction = require('./Sanction');
+const SanctionPro = require('./SanctionPro');
 const Gratification = require('./Gratification');
 const DeviceToken = require('./DeviceToken');
 const NettoyageEspacesPublics = require('./NettoyageEspacesPublics');
@@ -523,6 +524,19 @@ Sanction.belongsTo(Employe, { foreignKey: 'employe_id', as: 'employe' });
 Employe.hasMany(Sanction, { foreignKey: 'sanction_par', as: 'SanctionsAppliquees' });
 Sanction.belongsTo(Employe, { foreignKey: 'sanction_par', as: 'sanctionPar' });
 
+// Associations pour les sanctions Pro (circuit disciplinaire)
+Employe.hasMany(SanctionPro, { foreignKey: 'employe_id', as: 'SanctionsPro' });
+SanctionPro.belongsTo(Employe, { foreignKey: 'employe_id', as: 'employe' });
+
+User.hasMany(SanctionPro, { foreignKey: 'demandeur_id', as: 'SanctionsProDemandeur' });
+SanctionPro.belongsTo(User, { foreignKey: 'demandeur_id', as: 'demandeur' });
+
+User.hasMany(SanctionPro, { foreignKey: 'validateur_id', as: 'SanctionsProValidateur' });
+SanctionPro.belongsTo(User, { foreignKey: 'validateur_id', as: 'validateur' });
+
+User.hasMany(SanctionPro, { foreignKey: 'validation_direction_id', as: 'SanctionsProValidationDirection' });
+SanctionPro.belongsTo(User, { foreignKey: 'validation_direction_id', as: 'validationDirection' });
+
 // Associations pour les gratifications
 Employe.hasMany(Gratification, { foreignKey: 'employe_id', as: 'Gratifications' });
 Gratification.belongsTo(Employe, { foreignKey: 'employe_id', as: 'employe' });
@@ -662,6 +676,7 @@ module.exports = {
   CandidatureOffre,
   Dependant,
   Sanction,
+  SanctionPro,
   Gratification,
   Employe,
   DeviceToken,
