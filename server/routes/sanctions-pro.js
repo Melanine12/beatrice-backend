@@ -7,6 +7,7 @@ const { Op } = require('sequelize');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { SanctionPro, Employe, User } = require('../models');
+const CloudinaryDocumentService = require('../services/cloudinaryDocumentService');
 
 // Rôles qui voient toutes les demandes
 const ROLES_VOIR_TOUT = ['Patron', 'Administrateur', 'Superviseur RH', 'Auditeur'];
@@ -19,8 +20,10 @@ const canSeeAll = (user) => user && ROLES_VOIR_TOUT.includes(user.role);
 const canCreate = (user) => user && ROLES_CREER.includes(user.role);
 const canManageEtape = (user) => user && ROLES_RH_ETAPE.includes(user.role);
 
-// Multer : stockage des pièces dans uploads/sanctions-pro
-const uploadDir = path.join(__dirname, '../../uploads/sanctions-pro');
+const CLOUDINARY_FOLDER = 'hotel-beatrice/sanctions-pro';
+
+// Multer : stockage temporaire (fichiers envoyés vers Cloudinary puis supprimés)
+const uploadDir = path.join(__dirname, '../../uploads/temp/sanctions-pro');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -42,6 +45,14 @@ const upload = multer({
     cb(new Error('Type de fichier non autorisé. Autorisés: pdf, doc, docx, xls, xlsx, images.'), false);
   }
 });
+
+async function uploadFileToCloudinary(file, key) {
+  const docService = new CloudinaryDocumentService();
+  const result = await docService.uploadDocument(file.path, CLOUDINARY_FOLDER);
+  try { fs.unlinkSync(file.path); } catch (e) { /* ignore */ }
+  if (!result.success) throw new Error(result.error || 'Upload Cloudinary échoué');
+  return { url: result.url, nom: file.originalname };
+}
 
 const uploadCreation = upload.fields([
   { name: 'piece_1', maxCount: 1 },
@@ -203,12 +214,14 @@ router.post('/',
         demandeur_id: req.user.id
       };
       const documents = {};
-      ['piece_1', 'piece_2', 'piece_3'].forEach((key, i) => {
+      const uploads = [];
+      ['piece_1', 'piece_2', 'piece_3'].forEach((key) => {
         const f = req.files && req.files[key] && req.files[key][0];
-        if (f) {
-          documents[key] = { url: `/uploads/sanctions-pro/${path.basename(f.filename)}`, nom: f.originalname };
-        }
+        if (f) uploads.push({ key, file: f });
       });
+      for (const { key, file } of uploads) {
+        documents[key] = await uploadFileToCloudinary(file, key);
+      }
       if (Object.keys(documents).length) payload.documents = documents;
 
       const created = await SanctionPro.create(payload);
@@ -320,12 +333,12 @@ router.put('/:id/etape',
         newStatut = 'convocation_envoyee';
         updates.date_convocation = req.body.date_convocation || new Date().toISOString().split('T')[0];
         const f = req.files && req.files.lettre_convocation && req.files.lettre_convocation[0];
-        if (f) docs.lettre_convocation = { url: `/uploads/sanctions-pro/${path.basename(f.filename)}`, nom: f.originalname };
+        if (f) docs.lettre_convocation = await uploadFileToCloudinary(f, 'lettre_convocation');
       } else if (etape === 'entretien' && row.statut === 'convocation_envoyee') {
         newStatut = 'entretien_realise';
         updates.date_entretien = req.body.date_entretien || new Date().toISOString().split('T')[0];
         const f = req.files && req.files.proces_verbal && req.files.proces_verbal[0];
-        if (f) docs.proces_verbal = { url: `/uploads/sanctions-pro/${path.basename(f.filename)}`, nom: f.originalname };
+        if (f) docs.proces_verbal = await uploadFileToCloudinary(f, 'proces_verbal');
       } else if (etape === 'decision' && row.statut === 'entretien_realise') {
         newStatut = 'sanction_validee';
         updates.date_decision = req.body.date_decision || new Date().toISOString().split('T')[0];
@@ -337,7 +350,7 @@ router.put('/:id/etape',
         newStatut = 'sanction_notifiee';
         updates.date_notification = req.body.date_notification || new Date().toISOString().split('T')[0];
         const f = req.files && req.files.lettre_notification && req.files.lettre_notification[0];
-        if (f) docs.lettre_notification = { url: `/uploads/sanctions-pro/${path.basename(f.filename)}`, nom: f.originalname };
+        if (f) docs.lettre_notification = await uploadFileToCloudinary(f, 'lettre_notification');
       } else if (etape === 'cloture' && row.statut === 'sanction_notifiee') {
         newStatut = 'dossier_cloture';
         updates.date_cloture = req.body.date_cloture || new Date().toISOString().split('T')[0];

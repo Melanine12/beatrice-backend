@@ -131,7 +131,8 @@ const PORT = process.env.PORT || 5002;
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: false, // Disable CSP for development
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false // Les images /uploads sont servies avec CORP: cross-origin via le middleware dédié
 }));
 
 // Rate limiting - More permissive for development
@@ -252,8 +253,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Static file serving
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Static file serving – autoriser le chargement des images depuis le frontend (autre origine)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  setHeaders: (res) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+}));
 
 // API Routes with error handling
 app.use('/api/auth', authRoutes);
