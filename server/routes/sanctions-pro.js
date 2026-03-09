@@ -60,11 +60,14 @@ const uploadCreation = upload.fields([
   { name: 'piece_3', maxCount: 1 }
 ]);
 
-const uploadEtape = upload.fields([
-  { name: 'lettre_convocation', maxCount: 1 },
-  { name: 'proces_verbal', maxCount: 1 },
-  { name: 'lettre_notification', maxCount: 1 }
-]);
+// any() accepte tous les champs (etape, date_convocation, etc. en req.body + fichiers en req.files)
+// pour éviter "Unexpected field" quand le formulaire envoie des champs texte en plus des fichiers
+const uploadEtape = upload.any();
+function getEtapeFile(files, fieldname) {
+  if (!files || !Array.isArray(files)) return null;
+  const f = files.find((x) => x.fieldname === fieldname);
+  return f || null;
+}
 
 const uploadDemandeExplication = upload.fields([
   { name: 'piece_explication_1', maxCount: 1 },
@@ -407,12 +410,12 @@ router.put('/:id/etape',
       } else if (etape === 'convocation' && row.statut === 'en_analyse_rh') {
         newStatut = 'convocation_envoyee';
         updates.date_convocation = req.body.date_convocation || new Date().toISOString().split('T')[0];
-        const f = req.files && req.files.lettre_convocation && req.files.lettre_convocation[0];
+        const f = getEtapeFile(req.files, 'lettre_convocation');
         if (f) docs.lettre_convocation = await uploadFileToCloudinary(f, 'lettre_convocation');
       } else if (etape === 'entretien' && row.statut === 'demande_explication_recue') {
         newStatut = 'entretien_realise';
         updates.date_entretien = req.body.date_entretien || new Date().toISOString().split('T')[0];
-        const f = req.files && req.files.proces_verbal && req.files.proces_verbal[0];
+        const f = getEtapeFile(req.files, 'proces_verbal');
         if (f) docs.proces_verbal = await uploadFileToCloudinary(f, 'proces_verbal');
       } else if (etape === 'decision' && row.statut === 'entretien_realise') {
         newStatut = 'sanction_validee';
@@ -424,7 +427,7 @@ router.put('/:id/etape',
       } else if (etape === 'notification' && row.statut === 'sanction_validee') {
         newStatut = 'sanction_notifiee';
         updates.date_notification = req.body.date_notification || new Date().toISOString().split('T')[0];
-        const f = req.files && req.files.lettre_notification && req.files.lettre_notification[0];
+        const f = getEtapeFile(req.files, 'lettre_notification');
         if (f) docs.lettre_notification = await uploadFileToCloudinary(f, 'lettre_notification');
       } else if (etape === 'cloture' && row.statut === 'sanction_notifiee') {
         newStatut = 'dossier_cloture';
