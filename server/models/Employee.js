@@ -62,55 +62,64 @@ class Employee {
 
   // Créer un nouvel employé
   static async create(employeeData) {
+    // Certaines bases ont encore la colonne departement (VARCHAR NOT NULL) en plus de departement_id
+    const hasDepartementColumn = employeeData._hasDepartementColumn !== false;
+    const departementCol = hasDepartementColumn ? 'departement,' : '';
+    const departementVal = hasDepartementColumn ? '?,' : '';
+
     const query = `
       INSERT INTO tbl_employes (
         civilite, nom_famille, nom_usage, prenoms, date_naissance, lieu_naissance, nationalite,
         numero_securite_sociale, situation_famille, employeur_direct, adresse, code_postal, ville, pays,
         telephone_personnel, telephone_domicile, email_personnel, contact_urgence_nom,
         contact_urgence_prenom, contact_urgence_lien, contact_urgence_telephone, matricule,
-        poste, departement_id, sous_departement_id, date_embauche, type_contrat, date_fin_contrat, temps_travail,
+        poste, ${departementCol} departement_id, sous_departement_id, date_embauche, type_contrat, date_fin_contrat, temps_travail,
         statut, niveau_classification, salaire_journalier, transport, indemnites_diverse, photo_url, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${departementVal} ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
-    const values = [
-      employeeData.civilite || null, 
-      employeeData.nom_famille || null, 
+
+    const baseValues = [
+      employeeData.civilite || null,
+      employeeData.nom_famille || null,
       employeeData.nom_usage || null,
-      employeeData.prenoms || null, 
-      employeeData.date_naissance || null, 
+      employeeData.prenoms || null,
+      employeeData.date_naissance || null,
       employeeData.lieu_naissance || null,
-      employeeData.nationalite || null, 
-      employeeData.numero_securite_sociale || null, 
+      employeeData.nationalite || null,
+      employeeData.numero_securite_sociale || null,
       employeeData.situation_famille || null,
       employeeData.employeur_direct || null,
-      employeeData.adresse || null, 
-      employeeData.code_postal || null, 
-      employeeData.ville || null, 
+      employeeData.adresse || null,
+      employeeData.code_postal || null,
+      employeeData.ville || null,
       employeeData.pays || null,
-      employeeData.telephone_personnel || null, 
-      employeeData.telephone_domicile || null, 
+      employeeData.telephone_personnel || null,
+      employeeData.telephone_domicile || null,
       employeeData.email_personnel || null,
-      employeeData.contact_urgence_nom || null, 
-      employeeData.contact_urgence_prenom || null, 
+      employeeData.contact_urgence_nom || null,
+      employeeData.contact_urgence_prenom || null,
       employeeData.contact_urgence_lien || null,
-      employeeData.contact_urgence_telephone || null, 
-      employeeData.matricule || null, 
-      employeeData.poste || null,
-      employeeData.departement_id || null, 
-      employeeData.sous_departement_id || null, 
-      employeeData.date_embauche || null, 
+      employeeData.contact_urgence_telephone || null,
+      employeeData.matricule || null,
+      employeeData.poste || null
+    ];
+    if (hasDepartementColumn) baseValues.push(employeeData.departement || '');
+    baseValues.push(
+      employeeData.departement_id || null,
+      employeeData.sous_departement_id || null,
+      employeeData.date_embauche || null,
       employeeData.type_contrat || null,
-      employeeData.date_fin_contrat || null, 
-      employeeData.temps_travail || null, 
+      employeeData.date_fin_contrat || null,
+      employeeData.temps_travail || null,
       employeeData.statut || 'Actif',
       employeeData.niveau_classification || null,
-      employeeData.salaire_journalier || 0.00,
-      employeeData.transport || 0.00,
-      employeeData.indemnites_diverse || 0.00,
-      employeeData.photo_url || null, 
+      parseFloat(employeeData.salaire_journalier) || 0.00,
+      parseFloat(employeeData.transport) || 0.00,
+      parseFloat(employeeData.indemnites_diverse || employeeData.indemnites_diverses) || 0.00,
+      employeeData.photo_url || null,
       employeeData.created_by || null
-    ];
+    );
+    const values = baseValues;
 
     try {
       const connection = await mysql.createConnection(dbConfig);
@@ -118,6 +127,11 @@ class Employee {
       await connection.end();
       return { id: result.insertId, ...employeeData };
     } catch (error) {
+      if (hasDepartementColumn && error.message && (error.message.includes('Unknown column') || error.message.includes("doesn't exist"))) {
+        delete employeeData._hasDepartementColumn;
+        employeeData._hasDepartementColumn = false;
+        return Employee.create(employeeData);
+      }
       throw new Error(`Erreur lors de la création de l'employé: ${error.message}`);
     }
   }

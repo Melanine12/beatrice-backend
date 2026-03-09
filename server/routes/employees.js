@@ -149,8 +149,16 @@ router.post('/', authenticateToken, requireRole(['Superviseur RH', 'Administrate
       });
     }
 
+    // Normaliser le body : frontend peut envoyer indemnites_diverses, backend attend indemnites_diverse
+    const body = { ...req.body };
+    if (body.indemnites_diverses !== undefined && body.indemnites_diverse === undefined) {
+      body.indemnites_diverse = body.indemnites_diverses;
+    }
+    delete body.indemnites_diverses;
+    delete body.photo; // ne pas passer le champ fichier au modèle
+
     const employeeData = {
-      ...req.body,
+      ...body,
       created_by: req.user.id,
       updated_by: req.user.id
     };
@@ -187,12 +195,13 @@ router.post('/', authenticateToken, requireRole(['Superviseur RH', 'Administrate
     
     // Nettoyer le fichier temporaire en cas d'erreur
     if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+      try { fs.unlinkSync(req.file.path); } catch (e) { /* ignore */ }
     }
     
+    const message = error.message || 'Erreur serveur lors de la création de l\'employé';
     res.status(500).json({
       success: false,
-      message: 'Erreur serveur lors de la création de l\'employé'
+      message: process.env.NODE_ENV === 'production' ? 'Erreur serveur lors de la création de l\'employé' : message
     });
   }
 });
