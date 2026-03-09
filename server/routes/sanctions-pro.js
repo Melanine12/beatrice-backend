@@ -6,7 +6,7 @@ const multer = require('multer');
 const { Op } = require('sequelize');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken, requireRole } = require('../middleware/auth');
-const { SanctionPro, Employe, User } = require('../models');
+const { SanctionPro, Employe, User, EmployeUser } = require('../models');
 const CloudinaryDocumentService = require('../services/cloudinaryDocumentService');
 
 // Rôles qui voient toutes les demandes
@@ -72,7 +72,8 @@ const uploadDemandeExplication = upload.fields([
   { name: 'piece_explication_3', maxCount: 1 }
 ]);
 
-function buildWhereList(req) {
+/** linkedEmployeId: employé lié à l'utilisateur connecté (liaison employe-utilisateur). Permet à l'employé de voir les sanctions le concernant. */
+function buildWhereList(req, linkedEmployeId = null) {
   const where = {};
   const { statut, statuts, type_sanction, employe_id, demandeur_id, date_debut, date_fin, search } = req.query;
   if (statuts) {
@@ -88,15 +89,28 @@ function buildWhereList(req) {
     if (date_fin) where.date_incident[Op.lte] = date_fin;
   }
   if (!canSeeAll(req.user)) {
-    where.demandeur_id = req.user.id;
+    const orConditions = [{ demandeur_id: req.user.id }];
+    const eid = linkedEmployeId != null ? parseInt(linkedEmployeId, 10) : NaN;
+    if (!isNaN(eid) && eid > 0) orConditions.push({ employe_id: eid });
+    where[Op.or] = orConditions;
   }
   return where;
+}
+
+async function getLinkedEmployeId(userId) {
+  const uid = userId != null ? parseInt(userId, 10) : NaN;
+  if (!uid || isNaN(uid)) return null;
+  const liaison = await EmployeUser.findOne({ where: { user_id: uid }, attributes: ['employe_id'] });
+  if (!liaison) return null;
+  const eid = parseInt(liaison.employe_id, 10);
+  return isNaN(eid) ? null : eid;
 }
 
 // GET /api/sanctions-pro/stats — avant /:id
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
-    const where = buildWhereList(req);
+    const linkedEmployeId = await getLinkedEmployeId(req.user?.id);
+    const where = buildWhereList(req, linkedEmployeId);
     const total = await SanctionPro.count({ where });
 
     const parType = {};
@@ -122,7 +136,8 @@ router.get('/stats', authenticateToken, async (req, res) => {
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 20, search } = req.query;
-    const where = buildWhereList(req);
+    const linkedEmployeId = await getLinkedEmployeId(req.user?.id);
+    const where = buildWhereList(req, linkedEmployeId);
 
     if (search && search.trim()) {
       const ids = await SanctionPro.findAll({
@@ -176,8 +191,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
       ]
     });
     if (!row) return res.status(404).json({ success: false, message: 'Demande non trouvée' });
-    if (!canSeeAll(req.user) && row.demandeur_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Accès refusé' });
+    if (!canSeeAll(req.user)) {
+      const linkedEmployeId = await getLinkedEmployeId(req.user.id);
+      const isDemandeur = row.demandeur_id === req.user.id;
+      const isEmployeConcerne = linkedEmployeId && row.employe_id === linkedEmployeId;
+      if (!isDemandeur && !isEmployeConcerne) {
+        return res.status(403).json({ success: false, message: 'Accès refusé' });
+      }
     }
     res.json({ success: true, data: row });
   } catch (err) {
@@ -199,6 +219,12 @@ router.post('/:id/demande-explication',
           success: false,
           message: 'La demande d\'explication n\'est possible qu\'après convocation (statut convocation envoyée).'
         });
+      }
+      const linkedEmployeId = await getLinkedEmployeId(req.user.id);
+      const isEmployeConcerne = linkedEmployeId && row.employe_id === linkedEmployeId;
+      const isDemandeurOuRH = row.demandeur_id === req.user.id || canManageEtape(req.user);
+      if (!isEmployeConcerne && !isDemandeurOuRH) {
+        return res.status(403).json({ success: false, message: 'Seul l\'employé concerné peut déposer la demande d\'explication.' });
       }
       const texte = (req.body.texte_explication || '').trim();
       const docs = row.documents && typeof row.documents === 'object' ? { ...row.documents } : {};
