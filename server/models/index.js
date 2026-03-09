@@ -42,6 +42,7 @@ const Dependant = require('./Dependant');
 const Sanction = require('./Sanction');
 const SanctionPro = require('./SanctionPro');
 const Gratification = require('./Gratification');
+const EmployeUser = require('./EmployeUser');
 const DeviceToken = require('./DeviceToken');
 const NettoyageEspacesPublics = require('./NettoyageEspacesPublics');
 const CheckLinge = require('./CheckLinge')(sequelize);
@@ -537,6 +538,12 @@ SanctionPro.belongsTo(User, { foreignKey: 'validateur_id', as: 'validateur' });
 User.hasMany(SanctionPro, { foreignKey: 'validation_direction_id', as: 'SanctionsProValidationDirection' });
 SanctionPro.belongsTo(User, { foreignKey: 'validation_direction_id', as: 'validationDirection' });
 
+// Liaison employé ↔ utilisateur (bijective)
+EmployeUser.belongsTo(Employe, { foreignKey: 'employe_id', as: 'employe' });
+EmployeUser.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Employe.hasOne(EmployeUser, { foreignKey: 'employe_id', as: 'liaisonUser' });
+User.hasOne(EmployeUser, { foreignKey: 'user_id', as: 'liaisonEmploye' });
+
 // Associations pour les gratifications
 Employe.hasMany(Gratification, { foreignKey: 'employe_id', as: 'Gratifications' });
 Gratification.belongsTo(Employe, { foreignKey: 'employe_id', as: 'employe' });
@@ -679,6 +686,7 @@ module.exports = {
   SanctionPro,
   Gratification,
   Employe,
+  EmployeUser,
   DeviceToken,
   NettoyageEspacesPublics,
   CheckLinge,
