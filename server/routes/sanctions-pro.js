@@ -66,6 +66,12 @@ const uploadEtape = upload.fields([
   { name: 'lettre_notification', maxCount: 1 }
 ]);
 
+const uploadDemandeExplication = upload.fields([
+  { name: 'piece_explication_1', maxCount: 1 },
+  { name: 'piece_explication_2', maxCount: 1 },
+  { name: 'piece_explication_3', maxCount: 1 }
+]);
+
 function buildWhereList(req) {
   const where = {};
   const { statut, statuts, type_sanction, employe_id, demandeur_id, date_debut, date_fin, search } = req.query;
@@ -179,6 +185,49 @@ router.get('/:id', authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 });
+
+// POST /api/sanctions-pro/:id/demande-explication — dépôt par l'employé (entre convocation et entretien)
+router.post('/:id/demande-explication',
+  authenticateToken,
+  uploadDemandeExplication,
+  async (req, res) => {
+    try {
+      const row = await SanctionPro.findByPk(req.params.id, { include: [{ model: Employe, as: 'employe' }] });
+      if (!row) return res.status(404).json({ success: false, message: 'Demande non trouvée' });
+      if (row.statut !== 'convocation_envoyee') {
+        return res.status(400).json({
+          success: false,
+          message: 'La demande d\'explication n\'est possible qu\'après convocation (statut convocation envoyée).'
+        });
+      }
+      const texte = (req.body.texte_explication || '').trim();
+      const docs = row.documents && typeof row.documents === 'object' ? { ...row.documents } : {};
+      docs.texte_explication = texte || null;
+      const keys = ['piece_explication_1', 'piece_explication_2', 'piece_explication_3'];
+      for (const key of keys) {
+        const f = req.files && req.files[key] && req.files[key][0];
+        if (f) docs[key] = await uploadFileToCloudinary(f, key);
+      }
+      const today = new Date().toISOString().split('T')[0];
+      await row.update({
+        statut: 'demande_explication_recue',
+        date_demande_explication: today,
+        documents: docs
+      });
+      const withAssoc = await SanctionPro.findByPk(row.id, {
+        include: [
+          { model: Employe, as: 'employe' },
+          { model: User, as: 'demandeur' },
+          { model: User, as: 'validateur' }
+        ]
+      });
+      res.json({ success: true, message: 'Demande d\'explication enregistrée', data: withAssoc });
+    } catch (err) {
+      console.error('Erreur demande-explication sanctions-pro:', err);
+      res.status(500).json({ success: false, message: err.message || 'Erreur serveur' });
+    }
+  }
+);
 
 // POST /api/sanctions-pro/ — création
 router.post('/',
@@ -334,7 +383,7 @@ router.put('/:id/etape',
         updates.date_convocation = req.body.date_convocation || new Date().toISOString().split('T')[0];
         const f = req.files && req.files.lettre_convocation && req.files.lettre_convocation[0];
         if (f) docs.lettre_convocation = await uploadFileToCloudinary(f, 'lettre_convocation');
-      } else if (etape === 'entretien' && row.statut === 'convocation_envoyee') {
+      } else if (etape === 'entretien' && row.statut === 'demande_explication_recue') {
         newStatut = 'entretien_realise';
         updates.date_entretien = req.body.date_entretien || new Date().toISOString().split('T')[0];
         const f = req.files && req.files.proces_verbal && req.files.proces_verbal[0];

@@ -9,6 +9,7 @@ const STATUTS = [
   'en_analyse_rh',
   'classement_sans_suite',
   'convocation_envoyee',
+  'demande_explication_recue',
   'entretien_realise',
   'sanction_validee',
   'sanction_notifiee',
@@ -95,6 +96,11 @@ const SanctionPro = sequelize.define('SanctionPro', {
     type: DataTypes.DATEONLY,
     allowNull: true
   },
+  date_demande_explication: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+    comment: 'Date de dépôt de la demande d\'explication par l\'employé'
+  },
   date_entretien: {
     type: DataTypes.DATEONLY,
     allowNull: true
@@ -133,7 +139,7 @@ const SanctionPro = sequelize.define('SanctionPro', {
   documents: {
     type: DataTypes.JSON,
     allowNull: true,
-    comment: 'piece_1, piece_2, piece_3, lettre_convocation, proces_verbal, lettre_notification : { url, nom }'
+    comment: 'piece_1, piece_2, piece_3, lettre_convocation, piece_explication_1..3, proces_verbal, lettre_notification, texte_explication : { url, nom } ou texte'
   },
   created_at: {
     type: DataTypes.DATE,
@@ -179,7 +185,8 @@ SanctionPro.NIVEAU_GRAVITE = NIVEAU_GRAVITE;
 const TRANSITIONS = {
   en_attente: ['en_analyse_rh', 'classement_sans_suite', 'approuve', 'rejete'],
   en_analyse_rh: ['convocation_envoyee', 'classement_sans_suite'],
-  convocation_envoyee: ['entretien_realise'],
+  convocation_envoyee: ['demande_explication_recue'],
+  demande_explication_recue: ['entretien_realise'],
   entretien_realise: ['sanction_validee'],
   sanction_validee: ['sanction_notifiee'],
   sanction_notifiee: ['dossier_cloture']
