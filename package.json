@@ -30,6 +30,7 @@
     "docker:compose": "docker-compose up -d",
     "migrate": "node scripts/migrate-all.js",
     "migrate:dispatch": "node scripts/migrate-dispatch-housekeeping.js",
+    "migrate:maintenances-recurrentes": "node scripts/run-maintenances-recurrentes-migration.js",
     "migrate:sanctions-pro": "node scripts/migrate-sanctions-pro.js",
     "migrate:sanctions-pro:mysql": "bash scripts/migrate-sanctions-pro.sh"
   },
@@ -61,6 +62,7 @@
     "multer-storage-cloudinary": "^2.2.1",
     "mysql2": "^3.6.0",
     "pdfkit": "^0.17.1",
+    "resend": "^4.7.0",
     "sequelize": "^6.32.1",
     "sharp": "^0.34.3",
     "socket.io": "^4.8.1",
