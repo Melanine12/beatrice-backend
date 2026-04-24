@@ -31,6 +31,7 @@
     "migrate": "node scripts/migrate-all.js",
     "migrate:dispatch": "node scripts/migrate-dispatch-housekeeping.js",
     "migrate:inspections": "node scripts/run-inspections-migration.js",
+    "migrate:maintenances-recurrentes:is-inspected": "node scripts/add-is-inspected-to-maintenances-recurrentes.js",
     "migrate:maintenances-recurrentes": "node scripts/run-maintenances-recurrentes-migration.js",
     "migrate:sanctions-pro": "node scripts/migrate-sanctions-pro.js",
     "migrate:sanctions-pro:mysql": "bash scripts/migrate-sanctions-pro.sh"

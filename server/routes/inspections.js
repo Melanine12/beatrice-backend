@@ -62,6 +62,15 @@ router.post('/',
         type: sequelize.QueryTypes.INSERT
       });
 
+      await sequelize.query(`
+        UPDATE tbl_maintenances_recurrentes
+        SET is_inspected = 1, updated_at = NOW()
+        WHERE id = ?
+      `, {
+        replacements: [parseInt(maintenance_recurrente_id, 10)],
+        type: sequelize.QueryTypes.UPDATE
+      });
+
       const insertedId = Array.isArray(insertResult) ? insertResult[0] : insertResult;
       const [created] = await sequelize.query(
         'SELECT * FROM tbl_inspections WHERE id = ?',
