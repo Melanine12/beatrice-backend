@@ -58,6 +58,7 @@ const presencesDashboardRoutes = require('./routes/presences-dashboard');
 const reportsRoutes = require('./routes/reports');
 const suivisMaintenancesRoutes = require('./routes/suivis-maintenances');
 const maintenancesRecurrentesRoutes = require('./routes/maintenances-recurrentes');
+const inspectionsRoutes = require('./routes/inspections');
 const menusRoutes = require('./routes/menus');
 const messagesRoutes = require('./routes/messages');
 
@@ -315,6 +316,7 @@ app.use('/api/presences-dashboard', presencesDashboardRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/suivis-maintenances', suivisMaintenancesRoutes);
 app.use('/api/maintenances-recurrentes', maintenancesRecurrentesRoutes);
+app.use('/api/inspections', inspectionsRoutes);
 app.use('/api/menus', menusRoutes);
 app.use('/api/messages', messagesRoutes);
 
