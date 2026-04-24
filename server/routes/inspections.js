@@ -13,8 +13,8 @@ router.post('/',
   [
     body('maintenance_recurrente_id').isInt({ min: 1 }),
     body('utilisateur_id').isInt({ min: 1 }),
-    body('date_heure_inspection').notEmpty().isISO8601(),
-    body('observations').optional().isString()
+    body('date_heure_inspection').notEmpty().isISO8601({ strict: false }),
+    body('observations').optional({ nullable: true, checkFalsy: true }).isString()
   ],
   async (req, res) => {
     try {
@@ -29,6 +29,10 @@ router.post('/',
         date_heure_inspection,
         observations
       } = req.body;
+      const normalizedDate = new Date(date_heure_inspection);
+      if (Number.isNaN(normalizedDate.getTime())) {
+        return res.status(400).json({ success: false, message: 'date_heure_inspection invalide' });
+      }
 
       const [maintenance] = await sequelize.query(
         'SELECT id, titre FROM tbl_maintenances_recurrentes WHERE id = ?',
@@ -55,7 +59,7 @@ router.post('/',
           parseInt(maintenance_recurrente_id, 10),
           maintenance.titre,
           parseInt(utilisateur_id, 10),
-          date_heure_inspection,
+          normalizedDate,
           observations || null,
           req.user.id
         ],
